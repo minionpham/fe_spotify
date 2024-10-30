@@ -1,14 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import Playlists from "./Playlists";
 
 export default function Sidebar() {
+  const [showCreateInput, setShowCreateInput] = useState(false); // Trạng thái để hiển thị input
+
+  // Hàm này sẽ truyền xuống component Playlist để ẩn input sau khi tạo playlist
+  const handleCreatePlaylistSuccess = () => {
+    setShowCreateInput(false);
+  };
+
   return (
     <Container>
       <div className="top__links">
         <div className="logo">
-          <img src="https://cdn-icons-png.flaticon.com/512/232/232413.png"
-           alt="Spotify-Clone-Logo"
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/232/232413.png"
+            alt="Spotify-Clone-Logo"
           />
         </div>
         <ul>
@@ -18,12 +26,16 @@ export default function Sidebar() {
           <li>
             <span>Search</span>
           </li>
-          <li>
+          <li className="library">
             <span>Your Library</span>
+            <button onClick={() => setShowCreateInput(!showCreateInput)}>
+              +
+            </button>
           </li>
         </ul>
       </div>
-      <Playlists/>
+      {/* Truyền prop handleCreatePlaylistSuccess */}
+      <Playlists showCreateInput={showCreateInput} onCreateSuccess={handleCreatePlaylistSuccess} />
     </Container>
   );
 }
@@ -42,10 +54,9 @@ const Container = styled.div`
       text-align: center;
       margin: 1rem 0;
       img {
-        max-inline-size: 80%
+        max-inline-size: 80%;
         block-size: auto;
         height: 200px;
-        
       }
     }
     ul {
@@ -56,11 +67,28 @@ const Container = styled.div`
       padding: 1rem;
       li {
         display: flex;
+        justify-content: space-between; /* Để tạo khoảng cách giữa tên và nút */
+        align-items: center;
         gap: 1rem;
         cursor: pointer;
         transition: 0.3s ease-in-out;
-        &:hover{
+        &:hover {
           color: white;
+        }
+        .library {
+          position: relative;
+          button {
+            background-color: #1db954;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 50%;
+            padding: 0.2rem 0.5rem;
+            &:hover {
+              background-color: #1ed760;
+            }
+          }
         }
       }
     }

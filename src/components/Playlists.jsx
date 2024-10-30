@@ -4,8 +4,11 @@ import styled from "styled-components";
 import { reducerCases } from "../utils/Constants";
 import { useStateProvider } from "../utils/StateProvider";
 
-export default function Playlists() {
-  const [{ token, playlists, userInfo, newPlaylistName }, dispatch] = useStateProvider();
+export default function Playlists({ showCreateInput, onCreateSuccess }) {
+  const [
+    { token, playlists, userInfo, newPlaylistName, contextMenu, selectedPlaylistId },
+    dispatch,
+  ] = useStateProvider();
 
   useEffect(() => {
     const getPlaylistData = async () => {
@@ -25,12 +28,17 @@ export default function Playlists() {
       dispatch({ type: reducerCases.SET_PLAYLISTS, playlists });
     };
     getPlaylistData();
+
+    const handleClickOutside = () => dispatch({ type: reducerCases.SET_CONTEXT_MENU, contextMenu: null });
+    document.addEventListener("click", handleClickOutside);
+
+    return () => document.removeEventListener("click", handleClickOutside);
   }, [token, dispatch]);
 
   const createPlaylist = async () => {
-    if (newPlaylistName.trim() === "") return; // Kiểm tra nếu tên trống
+    if (newPlaylistName.trim() === "") return;
     const response = await axios.post(
-      `https://api.spotify.com/v1/users/${userInfo.userId}/playlists`, // Thêm userId vào API
+      `https://api.spotify.com/v1/users/${userInfo.userId}/playlists`,
       {
         name: newPlaylistName,
         description: "New playlist created via Spotify Clone",
@@ -46,42 +54,100 @@ export default function Playlists() {
     const createdPlaylist = { name: response.data.name, id: response.data.id };
     dispatch({
       type: reducerCases.SET_PLAYLISTS,
-      playlists: [...playlists, createdPlaylist], // Thêm playlist mới vào danh sách
+      playlists: [...playlists, createdPlaylist],
     });
-    dispatch({ type: reducerCases.SET_NEW_PLAYLIST_NAME, newPlaylistName: "" }); // Reset tên sau khi tạo
+    dispatch({ type: reducerCases.SET_NEW_PLAYLIST_NAME, newPlaylistName: "" });
+    onCreateSuccess();
   };
 
   const handlePlaylistNameChange = (e) => {
     dispatch({
       type: reducerCases.SET_NEW_PLAYLIST_NAME,
-      newPlaylistName: e.target.value, // Cập nhật tên playlist qua dispatch
+      newPlaylistName: e.target.value,
     });
   };
 
-  const changeCurrentPlaylist = (selectedPlaylistId) => {
-    dispatch({ type: reducerCases.SET_PLAYLIST_ID, selectedPlaylistId });
+  const changeCurrentPlaylist = async (id) => {
+    dispatch({ type: reducerCases.SET_PLAYLIST_ID, selectedPlaylistId: id });
+
+    const response = await axios.get(
+      `https://api.spotify.com/v1/playlists/${id}/tracks`,
+      {
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    if (response.data.items.length === 0) {
+      alert("Playlist này rỗng!");
+    }
+  };
+
+  const handleRightClick = (event, id) => {
+    event.preventDefault();
+    dispatch({
+      type: reducerCases.SET_CONTEXT_MENU,
+      contextMenu: { x: event.clientX, y: event.clientY },
+    });
+    dispatch({
+      type: reducerCases.SET_SELECTED_PLAYLIST_ID,
+      selectedPlaylistId: id,
+    });
+  };
+
+  const deletePlaylist = async () => {
+    if (selectedPlaylistId) {
+      await axios.delete(
+        `https://api.spotify.com/v1/playlists/${selectedPlaylistId}/followers`,
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      dispatch({
+        type: reducerCases.SET_PLAYLISTS,
+        playlists: playlists.filter((playlist) => playlist.id !== selectedPlaylistId),
+      });
+    }
+    dispatch({ type: reducerCases.SET_CONTEXT_MENU, contextMenu: null });
   };
 
   return (
     <Container>
-      <div className="create-playlist">
-        <input
-          type="text"
-          placeholder="Enter playlist name"
-          value={newPlaylistName}
-          onChange={handlePlaylistNameChange} // Gọi hàm thay đổi tên playlist
-        />
-        <button onClick={createPlaylist}>Create Playlist</button>
-      </div>
-      <ul>
-        {playlists.map(({ name, id }) => {
-          return (
-            <li key={id} onClick={() => changeCurrentPlaylist(id)}>
-              {name}
-            </li>
-          );
-        })}
+      {showCreateInput && (
+        <div className="create-playlist">
+          <input
+            type="text"
+            placeholder="Enter playlist name"
+            value={newPlaylistName}
+            onChange={handlePlaylistNameChange}
+          />
+          <button onClick={createPlaylist}>Create Playlist</button>
+        </div>
+      )}
+      <ul className="playlist-list">
+        {playlists.map(({ name, id }) => (
+          <li
+            key={id}
+            onClick={() => changeCurrentPlaylist(id)}
+            onContextMenu={(e) => handleRightClick(e, id)}
+          >
+            {name}
+          </li>
+        ))}
       </ul>
+
+      {contextMenu && (
+        <ContextMenu
+          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
+          onClick={deletePlaylist}
+        >
+          Delete Playlist
+        </ContextMenu>
+      )}
     </Container>
   );
 }
@@ -116,20 +182,17 @@ const Container = styled.div`
     }
   }
 
-  ul {
+  .playlist-list {
     list-style-type: none;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
     padding: 1rem;
-    height: 55vh;
-    max-height: 100%;
-    overflow: auto;
+    max-height: 300px; /* Giới hạn chiều cao của danh sách playlist */
+    overflow-y: auto; /* Bật tính năng cuộn khi danh sách vượt quá chiều cao */
     &::-webkit-scrollbar {
       width: 0.7rem;
-      &-thumb {
-        background-color: rgba(255, 255, 255, 0.6);
-      }
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.6);
+      border-radius: 10px;
     }
     li {
       transition: 0.3s ease-in-out;
@@ -138,5 +201,18 @@ const Container = styled.div`
         color: white;
       }
     }
+  }
+`;
+
+const ContextMenu = styled.div`
+  position: absolute;
+  background-color: #333;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  &:hover {
+    background-color: #444;
   }
 `;

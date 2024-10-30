@@ -53,6 +53,16 @@ const reducer = (state, action) => {
         ...state,
         newPlaylistName: action.newPlaylistName,
       };  
+    case reducerCases.SET_CONTEXT_MENU:
+      return {
+        ...state,
+        contextMenu: action.contextMenu,
+      };
+    case reducerCases.SET_SELECTED_PLAYLIST_ID:
+      return {
+        ...state,
+        selectedPlaylistId: action.selectedPlaylistId,
+      };
     default:
       return state;
   }

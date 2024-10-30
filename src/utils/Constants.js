@@ -8,4 +8,7 @@ export const reducerCases = {
   SET_PLAYLIST_ID: "SET_PLAYLIST_ID",
 
   SET_NEW_PLAYLIST_NAME: "SET_NEW_PLAYLIST_NAME",
+  SET_CONTEXT_MENU: "SET_CONTEXT_MENU", // Thêm hằng số cho context menu
+  SET_SELECTED_PLAYLIST_ID: "SET_SELECTED_PLAYLIST_ID", // Thêm hằng số cho playlist được chọn
+  
 };
