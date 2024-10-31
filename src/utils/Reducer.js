@@ -63,6 +63,12 @@ const reducer = (state, action) => {
         ...state,
         selectedPlaylistId: action.selectedPlaylistId,
       };
+    case reducerCases.REFRESH_PLAYLIST:
+      return {
+        ...state,
+        selectedPlaylistId: state.selectedPlaylistId, // Triggers useEffect in Body to refetch the playlist
+      };
+
     default:
       return state;
   }
