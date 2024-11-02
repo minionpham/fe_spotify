@@ -1,12 +1,16 @@
 import axios from "axios";
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import { useStateProvider } from "../utils/StateProvider";
 import { AiFillClockCircle } from "react-icons/ai";
+import { BsThreeDotsVertical } from "react-icons/bs";
 import { reducerCases } from "../utils/Constants";
+
 export default function Body({ headerBackground }) {
-  const [{ token, selectedPlaylist, selectedPlaylistId }, dispatch] =
+  const [{ token, selectedPlaylist, selectedPlaylistId, playlists }, dispatch] =
     useStateProvider();
+  const [showDropdown, setShowDropdown] = useState(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const getInitialPlaylist = async () => {
@@ -41,6 +45,16 @@ export default function Body({ headerBackground }) {
     };
     getInitialPlaylist();
   }, [token, dispatch, selectedPlaylistId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const playTrack = async (
     id,
@@ -83,11 +97,32 @@ export default function Body({ headerBackground }) {
     }
   };
 
+  const handleAddToPlaylist = async (trackId, playlistId) => {
+    try {
+      await axios.post(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+        { uris: [`spotify:track:${trackId}`] },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      alert("Track added to playlist!");
+    } catch (error) {
+      console.error("Could not add track to playlist:", error);
+      alert("Error adding track to playlist.");
+    }
+    setShowDropdown(null);
+  };
+
   const msToMinutesAndSeconds = (ms) => {
     var minutes = Math.floor(ms / 60000);
     var seconds = ((ms % 60000) / 1000).toFixed(0);
     return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
   };
+
   return (
     <Container headerBackground={headerBackground}>
       {selectedPlaylist && (
@@ -133,11 +168,13 @@ export default function Body({ headerBackground }) {
                     track_number,
                   },
                   index
-                ) => {
-                  return (
+                ) => (
+                  <div className="row" key={id}>
+                    <div className="col">
+                      <span>{index + 1}</span>
+                    </div>
                     <div
-                      className="row"
-                      key={id}
+                      className="col detail"
                       onClick={() =>
                         playTrack(
                           id,
@@ -149,27 +186,46 @@ export default function Body({ headerBackground }) {
                         )
                       }
                     >
-                      <div className="col">
-                        <span>{index + 1}</span>
+                      <div className="image">
+                        <img src={image} alt="track" />
                       </div>
-                      <div className="col detail">
-                        <div className="image">
-                          <img src={image} alt="track" />
-                        </div>
-                        <div className="info">
-                          <span className="name">{name}</span>
-                          <span>{artists}</span>
-                        </div>
-                      </div>
-                      <div className="col">
-                        <span>{album}</span>
-                      </div>
-                      <div className="col">
-                        <span>{msToMinutesAndSeconds(duration)}</span>
+                      <div className="info">
+                        <span className="name">{name}</span>
+                        <span>{artists.join(", ")}</span>
                       </div>
                     </div>
-                  );
-                }
+                    <div className="col">
+                      <span>{album}</span>
+                    </div>
+                    <div className="col">
+                      <span>{msToMinutesAndSeconds(duration)}</span>
+                    </div>
+                    <div className="col">
+                      <div className="ellipsis-container">
+                        <BsThreeDotsVertical
+                          className="ellipsis"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDropdown(showDropdown === id ? null : id);
+                          }}
+                        />
+                        {showDropdown === id && (
+                          <div className="dropdown" ref={dropdownRef}>
+                            {playlists.map(({ name, id: playlistId }) => (
+                              <div
+                                key={playlistId}
+                                onClick={() => handleAddToPlaylist(id, playlistId)}
+                                className="dropdown-item"
+                              >
+                                {name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -245,6 +301,32 @@ const Container = styled.div`
           }
         }
       }
+    }
+  }
+
+  .ellipsis {
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #dddcdc;
+    &:hover {
+      color: #1ed760;
+    }
+  }
+  .dropdown {
+    position: absolute;
+    background-color: #333;
+    border-radius: 4px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
+    width: 150px;
+    padding: 0.5rem;
+    z-index: 10;
+  }
+  .dropdown-item {
+    padding: 0.5rem;
+    color: white;
+    cursor: pointer;
+    &:hover {
+      background-color: #444;
     }
   }
 `;
