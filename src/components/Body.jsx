@@ -199,8 +199,6 @@ export default function Body({ headerBackground }) {
                     </div>
                     <div className="col">
                       <span>{msToMinutesAndSeconds(duration)}</span>
-                    </div>
-                    <div className="col">
                       <div className="ellipsis-container">
                         <BsThreeDotsVertical
                           className="ellipsis"
@@ -304,23 +302,34 @@ const Container = styled.div`
     }
   }
 
+  .ellipsis-container {
+    position: relative;
+    display: inline-block;
+    margin-left: 1rem;
+  }
+
   .ellipsis {
     cursor: pointer;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: #dddcdc;
     &:hover {
       color: #1ed760;
     }
   }
+
   .dropdown {
-    position: absolute;
+    position: fixed; /* Fix position to the center of the screen */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     background-color: #333;
     border-radius: 4px;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
-    width: 150px;
-    padding: 0.5rem;
+    width: 200px; /* Adjust width as needed */
+    padding: 1rem;
     z-index: 10;
   }
+
   .dropdown-item {
     padding: 0.5rem;
     color: white;
