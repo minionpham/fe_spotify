@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FaSearch } from "react-icons/fa";
 import { reducerCases } from "../utils/Constants";
@@ -8,6 +8,8 @@ import { FiLogOut } from "react-icons/fi";
 import { PiUserSwitch } from "react-icons/pi";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaRegUserCircle } from "react-icons/fa";
+import { FaRegEyeSlash } from "react-icons/fa";
+import { IoEyeOutline } from "react-icons/io5";
 import axios from "axios";
 
 export default function Navbar({ navBackground }) {
@@ -18,6 +20,20 @@ export default function Navbar({ navBackground }) {
   const [errorMessage, setErrorMessage] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [isUserInfoOpen, setIsUserInfoOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    const fetchUser = async () => {
+      const response = await axios.get(
+        `http://localhost:3001/api/users/${userId}`
+      );
+      setUser(response.data);
+    };
+
+    fetchUser();
+  }, []);
 
   const handleToggle = () => {
     setShowInfo((prevShowInfo) => !prevShowInfo);
@@ -241,8 +257,19 @@ export default function Navbar({ navBackground }) {
                         )}
                       </div>
 
-                      <p>Username: </p>
-                      <p>Password: </p>
+                      <p>Username: {user.username}</p>
+                      <div className="password-container">
+                        <p className="password-text">
+                            Password: {" "}
+                            {showPassword ? user.password : '•'.repeat(user.password.length)}
+                        </p>
+                        <button
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="password-icon"
+                        >
+                            {showPassword ? <FaRegEyeSlash /> : <IoEyeOutline />}
+                        </button>
+                      </div>
                       <p>Gmail Account: {userInfo?.email}</p>
                       <p>Github Link: </p>
                       <p>Followers: {userInfo?.followers}</p>
@@ -589,16 +616,16 @@ const Container = styled.div`
 
   .manage-account-button {
     display: block; /* Makes the button a block element */
-    background-color: #2f2f2f; 
+    background-color: #2f2f2f;
     color: white; /* Text color */
-    padding: 10px 20px; 
+    padding: 10px 20px;
     border: 0.1px solid white;
     border-radius: 20px; /* Rounded corners */
     font-size: 16px; /* Font size */
-    font-family: Arial, sans-serif; 
+    font-family: Arial, sans-serif;
     text-align: center; /* Center text */
     cursor: pointer; /* Pointer cursor on hover */
-    margin: 130px auto 0; 
+    margin: 130px auto 0;
     width: 200px; /* Set a fixed width */
   }
 
@@ -609,6 +636,30 @@ const Container = styled.div`
   .manage-account-button:focus {
     outline: none; /* Remove outline on focus */
     box-shadow: 0 0 5px rgba(76, 195, 247, 0.5); /* Light shadow on focus */
+  }
+
+  .password-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .password-icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 5px;
+    font-size: 1.2rem; 
+    color: white;
+  }
+
+  .password-text {
+    margin-right: 30px; 
+    display: inline;
   }
 
   .search__bar {

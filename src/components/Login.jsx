@@ -29,6 +29,10 @@ export default function Login() {
             const data = await response.json();
 
             if (response.ok) {
+
+                // Save user Id in localStorage
+                localStorage.setItem("userId", data.user._id);
+
                 // Redirect to Spotify auth page after successful registration/login
                 handleSpotifyAuth();
             } else {
