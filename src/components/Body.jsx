@@ -5,6 +5,7 @@ import { useStateProvider } from "../utils/StateProvider";
 import { AiFillClockCircle } from "react-icons/ai";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { reducerCases } from "../utils/Constants";
+import Home from "./Home"; // Import Home component
 
 export default function Body({ headerBackground }) {
   const [{ token, selectedPlaylist, selectedPlaylistId, playlists }, dispatch] =
@@ -139,7 +140,7 @@ export default function Body({ headerBackground }) {
           ))}
         </div>
       )}
-      {selectedPlaylist && (
+      {selectedPlaylist ? (
         <>
           <div className="playlist">
             <div className="image">
@@ -242,6 +243,8 @@ export default function Body({ headerBackground }) {
             </div>
           </div>
         </>
+      ) : (
+        <Home /> // Show Home component when no playlist is selected
       )}
     </Container>
   );
