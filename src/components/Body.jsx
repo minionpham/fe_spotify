@@ -125,6 +125,20 @@ export default function Body({ headerBackground }) {
 
   return (
     <Container headerBackground={headerBackground}>
+      {showDropdown && <div className="overlay" onClick={() => setShowDropdown(null)} />}
+      {showDropdown && (
+        <div className="dropdown" ref={dropdownRef}>
+          {playlists.map(({ name, id: playlistId }) => (
+            <div
+              key={playlistId}
+              onClick={() => handleAddToPlaylist(showDropdown, playlistId)}
+              className="dropdown-item"
+            >
+              {name}
+            </div>
+          ))}
+        </div>
+      )}
       {selectedPlaylist && (
         <>
           <div className="playlist">
@@ -302,7 +316,16 @@ const Container = styled.div`
     }
   }
 
-  
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Black overlay with 50% opacity */
+    z-index: 9;
+  }
+
   .ellipsis-container {
     position: relative;
     display: inline-block;
@@ -319,14 +342,14 @@ const Container = styled.div`
   }
 
   .dropdown {
-    position: fixed; /* Centers the dropdown on the screen */
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: #333;
     border-radius: 4px;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
-    width: 200px; /* Adjust width as needed */
+    width: 200px;
     padding: 1rem;
     z-index: 10;
     max-height: 300px; /* Sets maximum height for the dropdown */
@@ -342,3 +365,4 @@ const Container = styled.div`
     }
   }
 `;
+
