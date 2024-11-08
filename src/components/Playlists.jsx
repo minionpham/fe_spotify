@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect } from "react";
+import React, { useEffect} from "react";
 import styled from "styled-components";
 import { reducerCases } from "../utils/Constants";
 import { useStateProvider } from "../utils/StateProvider";
@@ -9,6 +9,8 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
     { token, playlists, userInfo, newPlaylistName, contextMenu, selectedPlaylistId },
     dispatch,
   ] = useStateProvider();
+  
+  // const [playlistImages, setPlaylistImages] = useState({}); // State để lưu ảnh playlist theo ID
 
   useEffect(() => {
     const getPlaylistData = async () => {
@@ -22,11 +24,28 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
         }
       );
       const { items } = response.data;
-      const playlists = items.map(({ name, id }) => {
-        return { name, id };
-      });
-      dispatch({ type: reducerCases.SET_PLAYLISTS, playlists });
+
+      // Lấy track data cho từng playlist và lưu ảnh album
+      const playlistsWithImages = await Promise.all(
+        items.map(async ({ name, id }) => {
+          const tracksResponse = await axios.get(
+            `https://api.spotify.com/v1/playlists/${id}/tracks`,
+            {
+              headers: {
+                Authorization: "Bearer " + token,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          const firstTrack = tracksResponse.data.items[0];
+          const albumImage = firstTrack?.track?.album?.images[2]?.url; // Lấy ảnh album
+          return { name, id, image: albumImage }; // Lưu ảnh album cho playlist
+        })
+      );
+      
+      dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: playlistsWithImages });
     };
+
     getPlaylistData();
 
     const handleClickOutside = () => dispatch({ type: reducerCases.SET_CONTEXT_MENU, contextMenu: null });
@@ -51,7 +70,7 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
         },
       }
     );
-    const createdPlaylist = { name: response.data.name, id: response.data.id };
+    const createdPlaylist = { name: response.data.name, id: response.data.id, image: response.data.images[2]?.url };
     dispatch({
       type: reducerCases.SET_PLAYLISTS,
       playlists: [...playlists, createdPlaylist],
@@ -129,12 +148,13 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
         </div>
       )}
       <ul className="playlist-list">
-        {playlists.map(({ name, id }) => (
+        {playlists.map(({ name, id, image }) => (
           <li
             key={id}
             onClick={() => changeCurrentPlaylist(id)}
             onContextMenu={(e) => handleRightClick(e, id)}
           >
+            <img src={image || "defaultImageUrl"} alt="album" className="playlist-image" />
             {name}
           </li>
         ))}
@@ -185,8 +205,8 @@ const Container = styled.div`
   .playlist-list {
     list-style-type: none;
     padding: 1rem;
-    max-height: 300px; /* Giới hạn chiều cao của danh sách playlist */
-    overflow-y: auto; /* Bật tính năng cuộn khi danh sách vượt quá chiều cao */
+    max-height: 300px;
+    overflow-y: auto;
     &::-webkit-scrollbar {
       width: 0.7rem;
     }
@@ -195,10 +215,19 @@ const Container = styled.div`
       border-radius: 10px;
     }
     li {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       transition: 0.3s ease-in-out;
       cursor: pointer;
       &:hover {
         color: white;
+      }
+      .playlist-image {
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+        object-fit: cover;
       }
     }
   }
