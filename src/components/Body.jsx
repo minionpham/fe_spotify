@@ -302,6 +302,7 @@ const Container = styled.div`
     }
   }
 
+  
   .ellipsis-container {
     position: relative;
     display: inline-block;
@@ -318,7 +319,7 @@ const Container = styled.div`
   }
 
   .dropdown {
-    position: fixed; /* Fix position to the center of the screen */
+    position: fixed; /* Centers the dropdown on the screen */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -328,6 +329,8 @@ const Container = styled.div`
     width: 200px; /* Adjust width as needed */
     padding: 1rem;
     z-index: 10;
+    max-height: 300px; /* Sets maximum height for the dropdown */
+    overflow-y: auto; /* Adds vertical scroll if content exceeds max height */
   }
 
   .dropdown-item {
