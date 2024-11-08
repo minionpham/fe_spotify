@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect} from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { reducerCases } from "../utils/Constants";
 import { useStateProvider } from "../utils/StateProvider";
@@ -9,8 +9,6 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
     { token, playlists, userInfo, newPlaylistName, contextMenu, selectedPlaylistId },
     dispatch,
   ] = useStateProvider();
-  
-  // const [playlistImages, setPlaylistImages] = useState({}); // State để lưu ảnh playlist theo ID
 
   useEffect(() => {
     const getPlaylistData = async () => {
@@ -56,6 +54,7 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
 
   const createPlaylist = async () => {
     if (newPlaylistName.trim() === "") return;
+  
     const response = await axios.post(
       `https://api.spotify.com/v1/users/${userInfo.userId}/playlists`,
       {
@@ -70,15 +69,23 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
         },
       }
     );
-    const createdPlaylist = { name: response.data.name, id: response.data.id, image: response.data.images[2]?.url };
+  
+    const createdPlaylist = {
+      name: response.data.name,
+      id: response.data.id,
+      image: response.data.images[2]?.url, // Nếu có, lấy ảnh của playlist
+    };
+  
+    // Thêm playlist mới lên đầu danh sách
     dispatch({
       type: reducerCases.SET_PLAYLISTS,
-      playlists: [...playlists, createdPlaylist],
+      playlists: [createdPlaylist, ...playlists], // Thêm playlist mới lên đầu
     });
+  
     dispatch({ type: reducerCases.SET_NEW_PLAYLIST_NAME, newPlaylistName: "" });
     onCreateSuccess();
   };
-
+  
   const handlePlaylistNameChange = (e) => {
     dispatch({
       type: reducerCases.SET_NEW_PLAYLIST_NAME,
@@ -217,15 +224,15 @@ const Container = styled.div`
     li {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 1.5rem;  /* Tăng khoảng cách giữa các playlist */
       transition: 0.3s ease-in-out;
       cursor: pointer;
       &:hover {
         color: white;
       }
       .playlist-image {
-        width: 30px;
-        height: 30px;
+        width: 50px;  /* Tăng kích thước ảnh playlist */
+        height: 50px;
         border-radius: 4px;
         object-fit: cover;
       }
