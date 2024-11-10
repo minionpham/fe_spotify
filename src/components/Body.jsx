@@ -11,49 +11,48 @@ export default function Body({ headerBackground }) {
   const [{ token, selectedPlaylist, selectedPlaylistId, playlists }, dispatch] =
     useStateProvider();
   const [showDropdown, setShowDropdown] = useState(null);
+  const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(null); // State for playlist dropdown
   const dropdownRef = useRef(null);
 
   useEffect(() => {
     const getInitialPlaylist = async () => {
-      if (selectedPlaylistId) {
-        const response = await axios.get(
-          `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
-          {
-            headers: {
-              Authorization: "Bearer " + token,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        const selectedPlaylist = {
-          id: response.data.id,
-          name: response.data.name,
-          description: response.data.description.startsWith("<a")
-            ? ""
-            : response.data.description,
-          image: response.data.images[0].url,
-          tracks: response.data.tracks.items.map(({ track }) => ({
-            id: track.id,
-            name: track.name,
-            artists: track.artists.map((artist) => artist.name),
-            image: track.album.images[2].url,
-            duration: track.duration_ms,
-            album: track.album.name,
-            context_uri: track.album.uri,
-            track_number: track.track_number,
-          })),
-        };
-        dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist });
-      } else {
-        dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist: null });
-      }
+      const response = await axios.get(
+        `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const selectedPlaylist = {
+        id: response.data.id,
+        name: response.data.name,
+        description: response.data.description.startsWith("<a")
+          ? ""
+          : response.data.description,
+        image: response.data.images[0].url,
+        tracks: response.data.tracks.items.map(({ track }) => ({
+          id: track.id,
+          name: track.name,
+          artists: track.artists.map((artist) => artist.name),
+          image: track.album.images[2].url,
+          duration: track.duration_ms,
+          album: track.album.name,
+          context_uri: track.album.uri,
+          track_number: track.track_number,
+        })),
+      };
+      dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist });
     };
     getInitialPlaylist();
   }, [token, dispatch, selectedPlaylistId]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(null);
+        setShowPlaylistDropdown(null); // Close both dropdowns when clicking outside
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -118,7 +117,7 @@ export default function Body({ headerBackground }) {
       console.error("Could not add track to playlist:", error);
       alert("Error adding track to playlist.");
     }
-    setShowDropdown(null);
+    setShowPlaylistDropdown(null); // Close playlist dropdown after adding
   };
 
   const msToMinutesAndSeconds = (ms) => {
@@ -130,19 +129,8 @@ export default function Body({ headerBackground }) {
   return (
     <Container headerBackground={headerBackground}>
       {showDropdown && <div className="overlay" onClick={() => setShowDropdown(null)} />}
-      {showDropdown && (
-        <div className="dropdown" ref={dropdownRef}>
-          {playlists.map(({ name, id: playlistId }) => (
-            <div
-              key={playlistId}
-              onClick={() => handleAddToPlaylist(showDropdown, playlistId)}
-              className="dropdown-item"
-            >
-              {name}
-            </div>
-          ))}
-        </div>
-      )}
+      {showPlaylistDropdown && <div className="overlay" onClick={() => setShowPlaylistDropdown(null)} />}
+      
       {selectedPlaylist ? (
         <>
           <div className="playlist">
@@ -227,15 +215,15 @@ export default function Body({ headerBackground }) {
                         />
                         {showDropdown === id && (
                           <div className="dropdown" ref={dropdownRef}>
-                            {playlists.map(({ name, id: playlistId }) => (
-                              <div
-                                key={playlistId}
-                                onClick={() => handleAddToPlaylist(id, playlistId)}
-                                className="dropdown-item"
-                              >
-                                {name}
-                              </div>
-                            ))}
+                            <div
+                              className="dropdown-item"
+                              onClick={() => {
+                                setShowDropdown(null);
+                                setShowPlaylistDropdown(id);
+                              }}
+                            >
+                              Thêm vào danh sách phát
+                            </div>
                           </div>
                         )}
                       </div>
@@ -248,6 +236,20 @@ export default function Body({ headerBackground }) {
         </>
       ) : (
         <Home /> // Show Home component when no playlist is selected
+      )}
+      
+      {showPlaylistDropdown && (
+        <div className="playlist-dropdown" ref={dropdownRef}>
+          {playlists.map(({ name, id: playlistId }) => (
+            <div
+              key={playlistId}
+              onClick={() => handleAddToPlaylist(showPlaylistDropdown, playlistId)}
+              className="dropdown-item"
+            >
+              {name}
+            </div>
+          ))}
+        </div>
       )}
     </Container>
   );
@@ -347,27 +349,62 @@ const Container = styled.div`
     }
   }
 
+  /* Positioning dropdown to the left of the 3 dots button */
   .dropdown {
+    position: absolute; /* Changed from fixed to absolute */
+    top: 0;
+    left: -150px; /* Adjust position to left of the 3 dots button */
+    background-color: #282828;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    z-index: 10;
+    width: 200px;
+    text-align: center;
+    color: #fff;
+
+    .dropdown-item {
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      color: #b3b3b3;
+
+      &:hover {
+        background-color: #404040;
+        color: #fff;
+      }
+    }
+  }
+
+  /* Ensure playlist dropdown is centered */
+  .playlist-dropdown {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: #333;
-    border-radius: 4px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
     width: 200px;
     padding: 1rem;
     z-index: 10;
-    max-height: 300px; /* Sets maximum height for the dropdown */
-    overflow-y: auto; /* Adds vertical scroll if content exceeds max height */
-  }
+    max-height: 300px;
+    overflow-y: auto;
+    color: #fff;
+    text-align: left;
 
-  .dropdown-item {
-    padding: 0.5rem;
-    color: white;
-    cursor: pointer;
-    &:hover {
-      background-color: #444;
+    .dropdown-item {
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      color: #b3b3b3;
+
+      &:hover {
+        background-color: #444;
+        color: #fff;
+      }
     }
   }
 `;
