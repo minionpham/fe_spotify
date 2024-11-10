@@ -68,6 +68,8 @@ const reducer = (state, action) => {
         ...state,
         selectedPlaylistId: state.selectedPlaylistId, // Triggers useEffect in Body to refetch the playlist
       };
+    case reducerCases.CLEAR_SELECTED_PLAYLIST: // Thêm xử lý này
+      return { ...state, selectedPlaylist: null }; // Reset selectedPlaylist
 
     default:
       return state;

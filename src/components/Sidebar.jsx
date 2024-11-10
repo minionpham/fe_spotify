@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import Playlists from "./Playlists";
+import { useStateProvider } from "../utils/StateProvider";
+import { reducerCases } from "../utils/Constants";
 
 export default function Sidebar() {
   const [showCreateInput, setShowCreateInput] = useState(false); // Trạng thái để hiển thị input
+  const [, dispatch] = useStateProvider();
+
+  const handleHomeClick = () => {
+    dispatch({ type: reducerCases.SET_PLAYLIST_ID, selectedPlaylistId: null });
+  };
 
   // Hàm này sẽ truyền xuống component Playlist để ẩn input sau khi tạo playlist
   const handleCreatePlaylistSuccess = () => {
@@ -20,7 +27,7 @@ export default function Sidebar() {
           />
         </div>
         <ul>
-          <li>
+          <li onClick={handleHomeClick}>
             <span>Home</span>
           </li>
           <li>

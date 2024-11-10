@@ -12,4 +12,5 @@ export const reducerCases = {
   SET_SELECTED_PLAYLIST_ID: "SET_SELECTED_PLAYLIST_ID", // Thêm hằng số cho playlist được chọn
   
   REFRESH_PLAYLIST: "REFRESH_PLAYLIST",
+  CLEAR_SELECTED_PLAYLIST: "CLEAR_SELECTED_PLAYLIST",
 };
