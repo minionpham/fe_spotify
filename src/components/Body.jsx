@@ -14,7 +14,9 @@ export default function Body({ headerBackground }) {
   const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(null); // State for playlist dropdown
   const dropdownRef = useRef(null);
 
+  // Reset `selectedPlaylist` khi `selectedPlaylistId` thay đổi
   useEffect(() => {
+    dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist: null });
     const getInitialPlaylist = async () => {
       const response = await axios.get(
         `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
@@ -31,12 +33,12 @@ export default function Body({ headerBackground }) {
         description: response.data.description.startsWith("<a")
           ? ""
           : response.data.description,
-        image: response.data.images[0].url,
+        image: response.data.images[0]?.url || "",  // Sử dụng URL ảnh trống nếu không có ảnh
         tracks: response.data.tracks.items.map(({ track }) => ({
           id: track.id,
           name: track.name,
           artists: track.artists.map((artist) => artist.name),
-          image: track.album.images[2].url,
+          image: track.album.images[2]?.url || "",  // Sử dụng URL ảnh trống nếu không có ảnh
           duration: track.duration_ms,
           album: track.album.name,
           context_uri: track.album.uri,
@@ -45,14 +47,15 @@ export default function Body({ headerBackground }) {
       };
       dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist });
     };
-    getInitialPlaylist();
+    if (selectedPlaylistId) getInitialPlaylist();
   }, [token, dispatch, selectedPlaylistId]);
 
+  // Xử lý đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(null);
-        setShowPlaylistDropdown(null); // Close both dropdowns when clicking outside
+        setShowPlaylistDropdown(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -102,7 +105,6 @@ export default function Body({ headerBackground }) {
 
   const handleAddToPlaylist = async (trackId, playlistId) => {
     try {
-      // Step 1: Add track to the playlist
       await axios.post(
         `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
         { uris: [`spotify:track:${trackId}`] },
@@ -113,13 +115,11 @@ export default function Body({ headerBackground }) {
           },
         }
       );
-  
+
       alert("Track added to playlist!");
-  
-      // Step 2: Introduce a delay to allow the Spotify API to update
+
       await new Promise((resolve) => setTimeout(resolve, 500));
-  
-      // Step 3: Re-fetch all playlists
+
       const playlistsResponse = await axios.get(
         `https://api.spotify.com/v1/me/playlists`,
         {
@@ -129,25 +129,21 @@ export default function Body({ headerBackground }) {
           },
         }
       );
-  
-      // Step 4: Dispatch the updated playlists to update the UI
+
       const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
         id: playlist.id,
         name: playlist.name,
-        image: playlist.images[0]?.url || "", // Use the playlist's first image or a default if it doesn't exist
+        image: playlist.images[0]?.url || "",
       }));
-  
+
       dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
-  
     } catch (error) {
       console.error("Error adding track to playlist:", error);
       alert("Error adding track to playlist.");
     } finally {
-      setShowPlaylistDropdown(null); // Close the playlist dropdown
+      setShowPlaylistDropdown(null);
     }
   };
-  
-  
 
   const msToMinutesAndSeconds = (ms) => {
     var minutes = Math.floor(ms / 60000);
