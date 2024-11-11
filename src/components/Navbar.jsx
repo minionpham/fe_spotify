@@ -17,13 +17,68 @@ export default function Navbar({ navBackground }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [{ token }, dispatch] = useStateProvider();
-  const [errorMessage, setErrorMessage] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [isUserInfoOpen, setIsUserInfoOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [oldPassword, setOldPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [img, setImg] = useState();
+
+  const formdata = new FormData()
+  formdata.append("image", img)
+
+  const handleUpdateImg = () => {
+    fetch("http://localhost:3001/single", {
+      method: "POST",
+      body: formdata,
+    }).then((res) => {
+      console.log(res.msg)
+    }).catch((err) => {
+      console.log(err)
+    })
+  }
+
+  const handleSaveChanges = async () => {
+    try {
+      // If oldPassword and newPassword are provided and the oldpassword must be verified, update the password
+      if (oldPassword && newPassword && oldPassword === user.password) {
+        const passwordResponse = await axios.post(
+          `http://localhost:3001/api/users/change-password`,
+          {
+            username: user.username, // Pass the updated username
+            oldPassword,
+            newPassword,
+          }
+        );
+
+        if (passwordResponse.data.message) {
+          alert(passwordResponse.data.message);
+        }
+      }
+
+      // Update user data locally
+      setUser(() => ({
+        username: user.username,
+        password: newPassword,
+      }));
+
+      setErrorMessage(null);
+      alert("Account details updated successfully!");
+    } catch (error) {
+      console.error("Error updating account details:", error);
+      setErrorMessage("Failed to update account details.");
+      if (error.response && error.response.data && error.response.data.error) {
+        alert(error.response.data.error);
+      }
+    }
+  };
+
 
   useEffect(() => {
+
     const userId = localStorage.getItem("userId");
     const fetchUser = async () => {
       const response = await axios.get(
@@ -95,20 +150,8 @@ export default function Navbar({ navBackground }) {
         ...albumSuggestions,
         ...artistSuggestions,
       ]);
-
-      setErrorMessage(null);
     } catch (error) {
       console.error("Error fetching: ", error);
-
-      if (error.response?.status === 401) {
-        setErrorMessage("Token expired. Please log in again.");
-      } else if (error.response?.status === 403) {
-        setErrorMessage(
-          "Authorization failed. Please check your token and permissions."
-        );
-      } else {
-        setErrorMessage("Failed to fetch suggestions. Please try again.");
-      }
     }
   };
 
@@ -249,33 +292,81 @@ export default function Navbar({ navBackground }) {
                   >
                     <h2>User Information</h2>
                     <div className="info-details">
-                      <div className="info-image-details">
-                        {userInfo?.images ? (
-                          <img src={userInfo.images} alt="User Info" />
-                        ) : (
-                          <p>No image available</p>
-                        )}
+                      
+                      <div>
+                        <input type="file" onChange={(e) => console.log(e.target.files[0])}/>
                       </div>
+                      <br />
+                      <button onClick={handleUpdateImg}>Submit</button>
 
-                      <p>Username: {user.username}</p>
-                      <div className="password-container">
-                        <p className="password-text">
-                            Password: {" "}
-                            {showPassword ? user.password : '•'.repeat(user.password.length)}
-                        </p>
-                        <button
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="password-icon"
-                        >
-                            {showPassword ? <FaRegEyeSlash /> : <IoEyeOutline />}
-                        </button>
-                      </div>
-                      <p>Gmail Account: {userInfo?.email}</p>
-                      <p>Github Link: </p>
-                      <p>Followers: {userInfo?.followers}</p>
+                      {isEditing ? (
+                        <div className="form-container">
+                          <p>Username: {user.username}</p>
+                          <div className="editable-field">
+                            <p>Old Password :</p>
+                            <input
+                              type="password"
+                              value={oldPassword}
+                              onChange={(e) => setOldPassword(e.target.value)}
+                            />
+                          </div>
+                          <div className="editable-field">
+                            <p>New Password:</p>
+                            <input
+                              type="password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                            />
+                            <button
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="password-icon"
+                            >
+                              {showPassword ? (
+                                <FaRegEyeSlash />
+                              ) : (
+                                <IoEyeOutline />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p>Username: {user.username}</p>
+                          <div className="password-container">
+                            <p className="password-text">
+                              Password:{" "}
+                              {showPassword
+                                ? user.password
+                                : "•".repeat(user.password.length)}
+                            </p>
+                            <button
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="password-icon"
+                            >
+                              {showPassword ? (
+                                <FaRegEyeSlash />
+                              ) : (
+                                <IoEyeOutline />
+                              )}
+                            </button>
+                          </div>
+                          <p className="email-text">
+                            Gmail Account: {userInfo?.email}
+                          </p>
+                        </>
+                      )}
 
-                      <button className="manage-account-button">
-                        Manage Account
+                      <button
+                        className="manage-account-button"
+                        onClick={() => {
+                          if (isEditing) {
+                            // Save changes when exiting edit mode
+                            handleSaveChanges();
+                          }
+                          setIsEditing(!isEditing); // Toggle edit mode
+                        }}
+                      >
+                        {isEditing ? "Save Changes" : "Manage Account"}
                       </button>
                     </div>
                   </div>
@@ -625,7 +716,7 @@ const Container = styled.div`
     font-family: Arial, sans-serif;
     text-align: center; /* Center text */
     cursor: pointer; /* Pointer cursor on hover */
-    margin: 130px auto 0;
+    margin: 40px auto 0;
     width: 200px; /* Set a fixed width */
   }
 
@@ -653,13 +744,103 @@ const Container = styled.div`
     border: none;
     cursor: pointer;
     padding: 0 5px;
-    font-size: 1.2rem; 
+    font-size: 1.2rem;
     color: white;
   }
 
   .password-text {
-    margin-right: 30px; 
+    margin-right: 30px;
     display: inline;
+  }
+
+  .email-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 270px;
+    display: inline-block;
+  }
+
+  .container {
+    text-align: left;
+    margin-top: 20px;
+  }
+
+  .circle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 2px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .placeholderText {
+    color: #777;
+    font-size: 14px;
+  }
+
+  .uploadButton {
+    background: #none;
+    font-size: 14px;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-left: 20px;
+    cursor: pointer;
+  }
+
+  .uploadbutton: hover {
+    text-decoration: underline;
+  }
+
+  .fileInput {
+    display: none; /* Hide the default file input */
+  }
+
+  .removeButton {
+    background: #ff4d4d;
+    color: #fff;
+    border: none;
+    padding: 5px 5px;
+    border-radius: 0 px;
+    cursor: pointer;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Space between the circle and buttons */
+    margin-left: -70px;
+  }
+
+  .editable-field {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 0px;
+    align-items: center;
+  }
+
+  .editable-field p {
+    text-align: left; /* Align text to the left for consistent spacing */
+  }
+
+  .editable-field input {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #333;
+    color: #fff;
+    width: 50%;
+    box-sizing: border-box;
+    margin-left: 10px;
   }
 
   .search__bar {
