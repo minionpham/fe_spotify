@@ -102,6 +102,7 @@ export default function Body({ headerBackground }) {
 
   const handleAddToPlaylist = async (trackId, playlistId) => {
     try {
+      // Step 1: Add track to the playlist
       await axios.post(
         `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
         { uris: [`spotify:track:${trackId}`] },
@@ -112,13 +113,41 @@ export default function Body({ headerBackground }) {
           },
         }
       );
+  
       alert("Track added to playlist!");
+  
+      // Step 2: Introduce a delay to allow the Spotify API to update
+      await new Promise((resolve) => setTimeout(resolve, 500));
+  
+      // Step 3: Re-fetch all playlists
+      const playlistsResponse = await axios.get(
+        `https://api.spotify.com/v1/me/playlists`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      // Step 4: Dispatch the updated playlists to update the UI
+      const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
+        id: playlist.id,
+        name: playlist.name,
+        image: playlist.images[0]?.url || "", // Use the playlist's first image or a default if it doesn't exist
+      }));
+  
+      dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
+  
     } catch (error) {
-      console.error("Could not add track to playlist:", error);
+      console.error("Error adding track to playlist:", error);
       alert("Error adding track to playlist.");
+    } finally {
+      setShowPlaylistDropdown(null); // Close the playlist dropdown
     }
-    setShowPlaylistDropdown(null); // Close playlist dropdown after adding
   };
+  
+  
 
   const msToMinutesAndSeconds = (ms) => {
     var minutes = Math.floor(ms / 60000);
