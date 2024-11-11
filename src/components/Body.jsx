@@ -1,12 +1,14 @@
 import axios from "axios";
-import React, { useEffect } from "react";
+import React, { useEffect ,useState} from "react";
 import styled from "styled-components";
 import { useStateProvider } from "../utils/StateProvider";
 import { AiFillClockCircle } from "react-icons/ai";
 import { reducerCases } from "../utils/Constants";
+import Footer from "./Footer";
 export default function Body({ headerBackground }) {
   const [{ token, selectedPlaylist, selectedPlaylistId }, dispatch] =
     useStateProvider();
+    const [selectedTrack, setSelectedTrack] = useState(null);
 
   useEffect(() => {
     const getInitialPlaylist = async () => {
@@ -35,6 +37,7 @@ export default function Body({ headerBackground }) {
           album: track.album.name,
           context_uri: track.album.uri,
           track_number: track.track_number,
+          uri: track.uri
         })),
       };
       dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist });
@@ -66,7 +69,7 @@ export default function Body({ headerBackground }) {
         }
       );
       if (response.status === 204) {
-        const currentPlaying = { id, name, artists, image };
+        const currentPlaying = { id, name, artists, image }; // doi tuong bai hat dang phat
         dispatch({ type: reducerCases.SET_PLAYING, currentPlaying });
         dispatch({ type: reducerCases.SET_PLAYER_STATE, playerState: true });
       } else {
@@ -87,6 +90,10 @@ export default function Body({ headerBackground }) {
     var minutes = Math.floor(ms / 60000);
     var seconds = ((ms % 60000) / 1000).toFixed(0);
     return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+  };
+
+  const handleTrackSelect = (track) => {
+    setSelectedTrack(track); // Update the selected track state
   };
   return (
     <Container headerBackground={headerBackground}>
@@ -131,6 +138,7 @@ export default function Body({ headerBackground }) {
                     album,
                     context_uri,
                     track_number,
+                    uri
                   },
                   index
                 ) => {
@@ -138,15 +146,19 @@ export default function Body({ headerBackground }) {
                     <div
                       className="row"
                       key={id}
-                      onClick={() =>
-                        playTrack(
-                          id,
-                          name,
-                          artists,
-                          image,
-                          context_uri,
-                          track_number
-                        )
+                      onClick={() => {// xu li su kien khi bam vao 1 track
+                       
+                        handleTrackSelect({ id, name, artists, image, duration, album, context_uri, track_number, uri })
+                        // playTrack(
+                        //   id,
+                        //   name,
+                        //   artists,
+                        //   image,
+                        //   context_uri,
+                        //   track_number
+                        // )
+                      }
+                        // thong tin 1 track
                       }
                     >
                       <div className="col">
@@ -175,6 +187,7 @@ export default function Body({ headerBackground }) {
           </div>
         </>
       )}
+      <Footer selectedTrack={selectedTrack}/>
     </Container>
   );
 }

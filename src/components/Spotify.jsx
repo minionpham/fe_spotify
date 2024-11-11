@@ -64,8 +64,6 @@ export default function Spotify() {
           </div>
         </div>
       </div>
-      <div className="spotify__footer">
-      </div>
     </Container>
   );
 }

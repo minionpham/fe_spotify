@@ -29,7 +29,9 @@ export default function CurrentTrack() {
       }
     };
     getCurrentTrack();
-  }, [token, dispatch]);
+  }, [token, dispatch]); // hmm chi co tac dung la cap nhat track dang phat khi token thay doi
+
+
   return (
     <Container>
       {currentPlaying && (

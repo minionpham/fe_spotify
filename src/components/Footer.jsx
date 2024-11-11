@@ -1,15 +1,13 @@
 import React from "react";
 import styled from "styled-components";
-import CurrentTrack from "./CurrentTrack";
+// import CurrentTrack from "./CurrentTrack";
 import PlayerControls from "./PlayerControls";
-import Volume from "./Volume";
+// import Volume from "./Volume";
 
-export default function Footer() {
+export default function Footer({selectedTrack}) {
   return (
     <Container>
-      <CurrentTrack />
-      <PlayerControls />
-      <Volume />
+      <PlayerControls selectedTrack={selectedTrack} />
     </Container>
   );
 }
