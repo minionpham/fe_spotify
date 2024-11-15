@@ -70,7 +70,7 @@ const reducer = (state, action) => {
       };
     case reducerCases.CLEAR_SELECTED_PLAYLIST: // Thêm xử lý này
       return { ...state, selectedPlaylist: null }; // Reset selectedPlaylist
-
+    
     default:
       return state;
   }

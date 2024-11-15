@@ -104,46 +104,126 @@ export default function Body({ headerBackground }) {
   };
 
   const handleAddToPlaylist = async (trackId, playlistId) => {
-    try {
-      await axios.post(
-        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-        { uris: [`spotify:track:${trackId}`] },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+  try {
+    // Lấy thông tin playlist hiện tại
+    const playlistResponse = await axios.get(
+      `https://api.spotify.com/v1/playlists/${playlistId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-      alert("Track added to playlist!");
+    // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
+    const trackExists = playlistResponse.data.tracks.items.some(
+      (item) => item.track.id === trackId
+    );
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const playlistsResponse = await axios.get(
-        `https://api.spotify.com/v1/me/playlists`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
-        id: playlist.id,
-        name: playlist.name,
-        image: playlist.images[0]?.url || "",
-      }));
-
-      dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
-    } catch (error) {
-      console.error("Error adding track to playlist:", error);
-      alert("Error adding track to playlist.");
-    } finally {
-      setShowPlaylistDropdown(null);
+    if (trackExists) {
+      alert("Bài hát đã có trong danh sách phát!");
+      return; // Thoát nếu bài hát đã tồn tại
     }
-  };
+
+    // Thêm bài hát vào playlist
+    await axios.post(
+      `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+      { uris: [`spotify:track:${trackId}`] },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    alert("Đã thêm bài hát vào danh sách phát!");
+
+    // Cập nhật lại danh sách các playlist
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const playlistsResponse = await axios.get(
+      `https://api.spotify.com/v1/me/playlists`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
+      id: playlist.id,
+      name: playlist.name,
+      image: playlist.images[0]?.url || "",
+    }));
+
+    dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
+  } catch (error) {
+    console.error("Error adding track to playlist:", error);
+    alert("Đã xảy ra lỗi khi thêm bài hát vào danh sách phát.");
+  } finally {
+    setShowPlaylistDropdown(null); // Đóng dropdown sau khi hoàn thành
+  }
+};
+
+
+const handleRemoveFromPlaylist = async (trackId) => {
+  try {
+    if (!selectedPlaylistId) return;
+
+    await axios.delete(
+      `https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        data: {
+          tracks: [{ uri: `spotify:track:${trackId}` }],
+        },
+      }
+    );
+
+    alert("Track removed from playlist!");
+
+    // Cập nhật lại playlist sau khi xóa
+    const response = await axios.get(
+      `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const updatedPlaylist = {
+      id: response.data.id,
+      name: response.data.name,
+      description: response.data.description.startsWith("<a")
+        ? ""
+        : response.data.description,
+      image: response.data.images[0]?.url || "",
+      tracks: response.data.tracks.items.map(({ track }) => ({
+        id: track.id,
+        name: track.name,
+        artists: track.artists.map((artist) => artist.name),
+        image: track.album.images[2]?.url || "",
+        duration: track.duration_ms,
+        album: track.album.name,
+        context_uri: track.album.uri,
+        track_number: track.track_number,
+      })),
+    };
+
+    dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist: updatedPlaylist });
+  } catch (error) {
+    console.error("Error removing track from playlist:", error);
+    alert("Error removing track from playlist.");
+  }
+};
+
 
   const msToMinutesAndSeconds = (ms) => {
     var minutes = Math.floor(ms / 60000);
@@ -248,6 +328,15 @@ export default function Body({ headerBackground }) {
                               }}
                             >
                               Thêm vào danh sách phát
+                            </div>
+                            <div
+                              className="dropdown-item"
+                              onClick={() => {
+                                setShowDropdown(null);
+                                handleRemoveFromPlaylist(id);
+                              }}
+                            >
+                              Xóa khỏi playlist
                             </div>
                           </div>
                         )}
