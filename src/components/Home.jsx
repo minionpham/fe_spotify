@@ -27,23 +27,6 @@ export default function Home() {
       }
     };
 
-    const fetchNewReleases = async () => {
-      try {
-        const response = await axios.get(
-          "https://api.spotify.com/v1/browse/new-releases",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        setNewReleases(response.data.albums.items);
-      } catch (error) {
-        console.error("Error fetching new releases:", error);
-      }
-    };
-
     const fetchRecentlyPlayed = async () => {
       try {
         const response = await axios.get(
@@ -62,15 +45,20 @@ export default function Home() {
     };
 
     fetchFeaturedPlaylists();
-    fetchNewReleases();
     fetchRecentlyPlayed();
   }, [token]);
 
   const handlePlaylistClick = (playlistId) => {
-    // Cập nhật selectedPlaylistId
     dispatch({
       type: "SET_SELECTED_PLAYLIST_ID",
       selectedPlaylistId: playlistId,
+    });
+  };
+
+  const handleTrackClick = (trackId) => {
+    dispatch({
+      type: "SET_SELECTED_TRACK_ID",
+      selectedTrackId: trackId,
     });
   };
 
@@ -97,17 +85,20 @@ export default function Home() {
       </Section>
 
       <Section>
-        <h2>New Releases</h2>
+        <h2>Recently Played</h2>
         <PlaylistGrid>
-          {newReleases.map((album) => (
-            <PlaylistCard key={album.id}>
-              {album.images && album.images.length > 0 ? (
-                <img src={album.images[0].url} alt={album.name} />
+          {recentlyPlayed.map((track) => (
+            <PlaylistCard
+              key={track.track.id + "-" + track.played_at}
+              onClick={() => handleTrackClick(track.track.id)}
+            >
+              {track.track.album.images && track.track.album.images.length > 0 ? (
+                <img src={track.track.album.images[0].url} alt={track.track.name} />
               ) : (
                 <img src="default-image-url.jpg" alt="Default" />
               )}
-              <h3>{album.name}</h3>
-              <p>{album.artists.map((artist) => artist.name).join(", ")}</p>
+              <h3>{track.track.name}</h3>
+              <p>{track.track.artists.map((artist) => artist.name).join(", ")}</p>
             </PlaylistCard>
           ))}
         </PlaylistGrid>
@@ -141,6 +132,13 @@ const PlaylistCard = styled.div`
   border-radius: 8px;
   text-align: center;
   cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+  }
+
   img {
     width: 100%;
     height: 150px;
