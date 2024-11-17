@@ -9,6 +9,7 @@ export const initialState = {
   selectedPlaylist: null,
   selectedPlaylistId: "", // 37i9dQZF1E37jO8SiMT0yN
   newPlaylistName: "",
+  selectedAlbumId: null,
 };
 
 const reducer = (state, action) => {
@@ -70,7 +71,11 @@ const reducer = (state, action) => {
       };
     case reducerCases.CLEAR_SELECTED_PLAYLIST: // Thêm xử lý này
       return { ...state, selectedPlaylist: null }; // Reset selectedPlaylist
-    
+    case "SET_SELECTED_ALBUM_ID":
+      return {
+        ...state,
+        selectedAlbumId: action.selectedAlbumId,
+      };
     default:
       return state;
   }

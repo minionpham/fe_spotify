@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { useStateProvider } from "../utils/StateProvider";
 
 export default function Home() {
-  const [{ token }] = useStateProvider();
+  const [{ token }, dispatch] = useStateProvider();
   const [featuredPlaylists, setFeaturedPlaylists] = useState([]);
   const [newReleases, setNewReleases] = useState([]);
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
@@ -66,13 +66,24 @@ export default function Home() {
     fetchRecentlyPlayed();
   }, [token]);
 
+  const handlePlaylistClick = (playlistId) => {
+    // Cập nhật selectedPlaylistId
+    dispatch({
+      type: "SET_SELECTED_PLAYLIST_ID",
+      selectedPlaylistId: playlistId,
+    });
+  };
+
   return (
     <Container>
       <Section>
         <h2>Featured Playlists</h2>
         <PlaylistGrid>
           {featuredPlaylists.map((playlist) => (
-            <PlaylistCard key={playlist.id}>
+            <PlaylistCard
+              key={playlist.id}
+              onClick={() => handlePlaylistClick(playlist.id)}
+            >
               {playlist.images && playlist.images.length > 0 ? (
                 <img src={playlist.images[0].url} alt={playlist.name} />
               ) : (
@@ -97,23 +108,6 @@ export default function Home() {
               )}
               <h3>{album.name}</h3>
               <p>{album.artists.map((artist) => artist.name).join(", ")}</p>
-            </PlaylistCard>
-          ))}
-        </PlaylistGrid>
-      </Section>
-
-      <Section>
-        <h2>Recently Played</h2>
-        <PlaylistGrid>
-          {recentlyPlayed.map(({ track }) => (
-            <PlaylistCard key={track.id}>
-              {track.album.images && track.album.images.length > 0 ? (
-                <img src={track.album.images[0].url} alt={track.name} />
-              ) : (
-                <img src="default-image-url.jpg" alt="Default" />
-              )}
-              <h3>{track.name}</h3>
-              <p>{track.artists.map((artist) => artist.name).join(", ")}</p>
             </PlaylistCard>
           ))}
         </PlaylistGrid>
@@ -146,6 +140,7 @@ const PlaylistCard = styled.div`
   padding: 1rem;
   border-radius: 8px;
   text-align: center;
+  cursor: pointer;
   img {
     width: 100%;
     height: 150px;
