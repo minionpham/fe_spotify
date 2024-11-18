@@ -7,7 +7,7 @@ export default function Sidebar() {
     <Container>
       <div className="top__links">
         <div className="logo">
-          <img src="https://cdn-icons-png.flaticon.com/512/232/232413.png"
+          <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Full_Logo_RGB_White.png"
            alt="Spotify-Clone-Logo"
           />
         </div>
@@ -39,14 +39,14 @@ const Container = styled.div`
     display: flex;
     flex-direction: column;
     .logo {
-      text-align: center;
-      margin: 1rem 0;
-      img {
-        max-inline-size: 80%
-        block-size: auto;
-        height: 200px;
-        
-      }
+    text-align: center;
+    margin: 1rem 0;
+    img {
+        width: 90%;      
+        max-height: 100px;  
+        object-fit: contain; 
+    }
+}
     }
     ul {
       list-style-type: none;
