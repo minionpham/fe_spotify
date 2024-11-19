@@ -5,6 +5,7 @@ import Navbar from "./Navbar";
 import axios from "axios";
 import { useStateProvider } from "../utils/StateProvider";
 import Body from "./Body";
+import Footer from "./Footer";
 
 import { reducerCases } from "../utils/Constants";
 
@@ -64,6 +65,10 @@ export default function Spotify() {
           </div>
         </div>
       </div>
+      <div className="spotify__footer">
+        <Footer />
+      </div>
+     
     </Container>
   );
 }

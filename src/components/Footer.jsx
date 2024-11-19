@@ -4,10 +4,10 @@ import styled from "styled-components";
 import PlayerControls from "./PlayerControls";
 // import Volume from "./Volume";
 
-export default function Footer({selectedTrack}) {
+export default function Footer() {
   return (
     <Container>
-      <PlayerControls selectedTrack={selectedTrack} />
+      <PlayerControls />
     </Container>
   );
 }

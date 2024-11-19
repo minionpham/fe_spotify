@@ -1,14 +1,12 @@
 import axios from "axios";
-import React, { useEffect ,useState} from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { useStateProvider } from "../utils/StateProvider";
 import { AiFillClockCircle } from "react-icons/ai";
 import { reducerCases } from "../utils/Constants";
-import Footer from "./Footer";
 export default function Body({ headerBackground }) {
-  const [{ token, selectedPlaylist, selectedPlaylistId }, dispatch] =
+  const [{ token, selectedPlaylist, selectedPlaylistId}, dispatch] =
     useStateProvider();
-    const [selectedTrack, setSelectedTrack] = useState(null);
 
   useEffect(() => {
     const getInitialPlaylist = async () => {
@@ -45,56 +43,12 @@ export default function Body({ headerBackground }) {
     getInitialPlaylist();
   }, [token, dispatch, selectedPlaylistId]);
 
-  const playTrack = async (
-    id,
-    name,
-    artists,
-    image,
-    context_uri,
-    track_number
-  ) => {
-    try {
-      const response = await axios.put(
-        `https://api.spotify.com/v1/me/player/play`,
-        {
-          context_uri,
-          offset: { position: track_number - 1 },
-          position_ms: 0,
-        },
-        {
-          headers: {
-            Authorization: "Bearer " + token,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (response.status === 204) {
-        const currentPlaying = { id, name, artists, image }; // doi tuong bai hat dang phat
-        dispatch({ type: reducerCases.SET_PLAYING, currentPlaying });
-        dispatch({ type: reducerCases.SET_PLAYER_STATE, playerState: true });
-      } else {
-        dispatch({ type: reducerCases.SET_PLAYER_STATE, playerState: true });
-      }
-    } catch (error) {
-      if (error.response?.status === 403) {
-        console.error(
-          "Access denied: Make sure you have Spotify Premium and a valid device."
-        );
-      } else {
-        console.error("Error playing track:", error);
-      }
-    }
-  };
-
   const msToMinutesAndSeconds = (ms) => {
     var minutes = Math.floor(ms / 60000);
     var seconds = ((ms % 60000) / 1000).toFixed(0);
     return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
   };
 
-  const handleTrackSelect = (track) => {
-    setSelectedTrack(track); // Update the selected track state
-  };
   return (
     <Container headerBackground={headerBackground}>
       {selectedPlaylist && (
@@ -147,16 +101,10 @@ export default function Body({ headerBackground }) {
                       className="row"
                       key={id}
                       onClick={() => {// xu li su kien khi bam vao 1 track
-                       
-                        handleTrackSelect({ id, name, artists, image, duration, album, context_uri, track_number, uri })
-                        // playTrack(
-                        //   id,
-                        //   name,
-                        //   artists,
-                        //   image,
-                        //   context_uri,
-                        //   track_number
-                        // )
+                        const selectedTrack = {id, name, artists, image, duration, album, context_uri, track_number, uri}
+    
+                        dispatch({ type: reducerCases.SET_SELECTED_TRACK, selectedTrack });
+                        
                       }
                         // thong tin 1 track
                       }
@@ -187,7 +135,6 @@ export default function Body({ headerBackground }) {
           </div>
         </>
       )}
-      <Footer selectedTrack={selectedTrack}/>
     </Container>
   );
 }

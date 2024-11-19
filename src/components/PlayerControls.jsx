@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import SpotifyPlayer from "react-spotify-web-playback";
+import SpotifyWebPlayer from "react-spotify-web-playback";
 import { useStateProvider } from "../utils/StateProvider";
 import { reducerCases } from "../utils/Constants";
-
-export default function PlayerControls({ selectedTrack }) {
-  const [{ token, currentPlaying }, dispatch] = useStateProvider();
+import axios from "axios";
+export default function PlayerControls() {
+  const [{ token,currentPlaying,selectedTrack }, dispatch] = useStateProvider();
   const [play, setPlay] = useState(false);
+  const[trackUri,setTrackUri] = useState([]);
 
   useEffect(() => {
     if (selectedTrack) {
@@ -20,36 +21,65 @@ export default function PlayerControls({ selectedTrack }) {
 
   useEffect(() => {
     if (currentPlaying) {
+      setTrackUri(currentPlaying.uri)
       console.log("Current playing track URI:", currentPlaying.uri); // check log
     }
   }, [currentPlaying]);
 
   const handlePlayerStateChange = (state) => {
     if (!state.isPlaying) setPlay(false);
-    dispatch({
-      type: reducerCases.SET_PLAYER_STATE,
-      playerState: state.isPlaying,
-    });
+    if(state.isPlaying){
+      dispatch({
+        type: reducerCases.SET_PLAYER_STATE,
+        playerState: state.isPlaying,
+      })
+    }
+  }
 
-  };
-
-
-  if (!token) return null;
-  console.log(token);
-  console.log(play);
+  useEffect(() =>{
+    const getCurrentTrack = async () => {
+      const response = await axios.get(
+        "https://api.spotify.com/v1/me/player/currently-playing",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
+      console.log(response);
+      
+      if (response.data !== "") {
+        const currentPlaying = {
+          id: response.data.item.id,
+          name: response.data.item.name,
+          artists: response.data.item.artists.map((artist) => artist.name),
+          image: response.data.item.album.images[2].url,
+          duration: response.data.item.duration,
+          album:response.data.item.album.name,
+          context_ur:response.data.item.album.uri,
+          track_number: response.data.item.track_number,
+          uri:response.data.item.uri
+        };
+        dispatch({ type: reducerCases.SET_PLAYING, currentPlaying });
+        setTrackUri(currentPlaying.uri)
+      } else {
+        dispatch({ type: reducerCases.SET_PLAYING, currentPlaying: null });
+      }
+    };
+    getCurrentTrack(); 
+    console.log(currentPlaying);
+       
+  },[token,dispatch]) // callback cua useEffect goi dung 1 lan 
   
-  
-  const trackUri = currentPlaying && currentPlaying.uri ? [currentPlaying.uri] : [];
-  console.log("Track URI to play:", trackUri); // check log
   return (
     <Container>
-      {selectedTrack && (
-         <SpotifyPlayer
+      {(
+         <SpotifyWebPlayer
          token={token}
          callback={handlePlayerStateChange}
          play={play}
          uris={trackUri}
-          // phat nhac
          styles={{
            activeColor: "#fff",
            bgColor: "#181818",
@@ -61,7 +91,6 @@ export default function PlayerControls({ selectedTrack }) {
          }}
        />
       )}
-     
     </Container>
   );
 }

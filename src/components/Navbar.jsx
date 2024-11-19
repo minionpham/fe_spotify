@@ -13,7 +13,6 @@ export default function Navbar({ navBackground }) {
   const [{ token }, dispatch] = useStateProvider();
   const [errorMessage, setErrorMessage] = useState(null);
 
-  console.log("Current token: ", token);
 
   const fetchSuggestions = async (query) => {
     try {
