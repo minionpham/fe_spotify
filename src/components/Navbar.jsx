@@ -25,21 +25,53 @@ export default function Navbar({ navBackground }) {
   const [newPassword, setNewPassword] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState(null);
-  const [img, setImg] = useState();
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isSettingOpen, setIsSettingOpen] = useState(false);
 
-  const formdata = new FormData()
-  formdata.append("image", img)
+  const [img, setImg] = useState(null);
+  const [imgUrl, setImgUrl] = useState("");
 
-  const handleUpdateImg = () => {
-    fetch("http://localhost:3001/single", {
-      method: "POST",
-      body: formdata,
-    }).then((res) => {
-      console.log(res.msg)
-    }).catch((err) => {
-      console.log(err)
-    })
-  }
+  const handleUpdateImg = async (event) => {
+    event.preventDefault(); // Prevent form from refreshing the page
+
+    const formData = new FormData();
+    const imageFile = event.target.image.files[0]; // Assuming input field has the name "image"
+
+    if (!imageFile) {
+        alert("Please select an image to upload.");
+        return;
+    }
+
+    formData.append("image", imageFile);
+
+    try {
+        const response = await fetch("http://localhost:3001/single", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result = await response.json();
+
+        if (result.msg === "Image Uploaded") {
+            const newImageUrl = result.id; // Assuming backend returns imageId
+            localStorage.setItem("imgUrl", newImageUrl); // Store imageId locally
+            setImgUrl(`http://localhost:3001/img/${newImageUrl}`); // Cập nhật URL ảnh hiển thị
+            alert("Image uploaded successfully:", newImageUrl);
+        } else {
+            alert("Failed to upload image.");
+        }
+    } catch (error) {
+        alert("An error occurred while uploading the image.");
+    }
+  };
+
+  const handleLogout = () => {
+
+    localStorage.removeItem("userId");
+
+    window.location.href = "http://localhost:3000";
+  };
+
 
   const handleSaveChanges = async () => {
     try {
@@ -76,8 +108,18 @@ export default function Navbar({ navBackground }) {
     }
   };
 
-
   useEffect(() => {
+
+    const storedImageUrl = localStorage.getItem("imgUrl");
+      if (storedImageUrl) {
+        fetch(`http://localhost:3001/img/${storedImageUrl}`)
+          .then((response) => {
+            if (response.ok) {
+              setImgUrl(`http://localhost:3001/img/${storedImageUrl}`);
+            }
+          })
+                .catch((error) => console.error("Error loading image:", error));
+    }
 
     const userId = localStorage.getItem("userId");
     const fetchUser = async () => {
@@ -260,7 +302,24 @@ export default function Navbar({ navBackground }) {
           <div className="user-info-popup">
             <div className="user-info-header">
               <div className="user-details">
-                <CgProfile className="popup-icon" />
+
+                <div className="image-container">
+                  {imgUrl ? (
+                    <div
+                      className="circle-popup"
+                      style={{
+                        backgroundImage: `url(${imgUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    ></div>
+                  ) : (
+                    <div className="circle placeholder">
+                      <span>Chưa có ảnh</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="user-text">
                   <p className="user-profile-name">{userInfo?.name}</p>
                   <p className="user-profile-url">
@@ -293,17 +352,45 @@ export default function Navbar({ navBackground }) {
                     <h2>User Information</h2>
                     <div className="info-details">
                       
-                      <div>
-                        <input type="file" onChange={(e) => console.log(e.target.files[0])}/>
+                    <div className="icontainer">
+                        <div className="image-container">
+                          {imgUrl ? (
+                            <div
+                              className="circle"
+                              style={{
+                                backgroundImage: `url(${imgUrl})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                              }}
+                            ></div>
+                          ) : (
+                            <div className="circle placeholder">
+                              <span>Chưa có ảnh</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="button-container">
+                          <form onSubmit={handleUpdateImg}>
+                            <input type="file" name="image" accept="image/*" />
+                            <button type="submit">Upload</button>
+                          </form>
+                          <button
+                            className="removeButton"
+                            onClick={() => {
+                              setImgUrl(null);
+                            }}
+                          >
+                            Remove photo
+                          </button>
+                        </div>
                       </div>
-                      <br />
-                      <button onClick={handleUpdateImg}>Submit</button>
 
                       {isEditing ? (
                         <div className="form-container">
                           <p>Username: {user.username}</p>
                           <div className="editable-field">
-                            <p>Old Password :</p>
+                            <p>Old Password:</p>
                             <input
                               type="password"
                               value={oldPassword}
@@ -312,49 +399,37 @@ export default function Navbar({ navBackground }) {
                           </div>
                           <div className="editable-field">
                             <p>New Password:</p>
-                            <input
-                              type="password"
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                            />
-                            <button
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="password-icon"
-                            >
-                              {showPassword ? (
-                                <FaRegEyeSlash />
-                              ) : (
-                                <IoEyeOutline />
-                              )}
-                            </button>
+                              <input
+                                type={showPassword ? "text" : "password"}
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                              />
+                              <button
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="password-icon"
+                              >
+                                {showPassword ? <FaRegEyeSlash /> : <IoEyeOutline />}
+                              </button>
                           </div>
                         </div>
                       ) : (
-                        <>
+                        <div className="form-container">
                           <p>Username: {user.username}</p>
                           <div className="password-container">
                             <p className="password-text">
-                              Password:{" "}
-                              {showPassword
-                                ? user.password
-                                : "•".repeat(user.password.length)}
+                              Password: {showPassword ? user.password : "•".repeat(user.password.length)}
                             </p>
                             <button
                               onClick={() => setShowPassword(!showPassword)}
                               className="password-icon"
                             >
-                              {showPassword ? (
-                                <FaRegEyeSlash />
-                              ) : (
-                                <IoEyeOutline />
-                              )}
+                              {showPassword ? <FaRegEyeSlash /> : <IoEyeOutline />}
                             </button>
                           </div>
-                          <p className="email-text">
-                            Gmail Account: {userInfo?.email}
-                          </p>
-                        </>
+                          <p className="email-text">Gmail Account: {userInfo?.email}</p>
+                        </div>
                       )}
+
 
                       <button
                         className="manage-account-button"
@@ -382,7 +457,7 @@ export default function Navbar({ navBackground }) {
               <IoSettingsOutline className="settings-icon" /> Settings
             </button>
 
-            <button className="logout-button">
+            <button className="logout-button" onClick={handleLogout}>
               <FiLogOut className="logout-icon" /> Logout
             </button>
           </div>
@@ -699,7 +774,6 @@ const Container = styled.div`
     margin-bottom: 0;
   }
 
-  /* Optional styling for labels */
   .info-details p::before {
     content: "• "; /* Adds a bullet point */
     color: #white; /* Accent color for bullet points */
@@ -727,6 +801,10 @@ const Container = styled.div`
   .manage-account-button:focus {
     outline: none; /* Remove outline on focus */
     box-shadow: 0 0 5px rgba(76, 195, 247, 0.5); /* Light shadow on focus */
+  }
+
+  .form-container{
+    margin: 20px 0;
   }
 
   .password-container {
@@ -766,51 +844,82 @@ const Container = styled.div`
     margin-top: 20px;
   }
 
-  .circle {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background-size: cover;
-    background-position: center;
-    border: 2px solid #ddd;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    cursor: pointer;
-  }
-
   .placeholderText {
     color: #777;
     font-size: 14px;
   }
 
-  .uploadButton {
-    background: #none;
+  .icontainer {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Khoảng cách giữa ảnh và nút */
+    margin-top: 20px;
+  }
+
+  .image-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .circle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #888;
     font-size: 14px;
-    color: #fff;
+    background-color: #f0f0f0;
+  }
+
+  .circle-popup {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    background-color: #f0f0f0;
+  }
+
+  .placeholder {
+    background-color: #f8f9fa;
+  }
+
+  .button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Khoảng cách giữa các nút */
+  }
+
+  button {
+    width: 120px;
+    padding: 10px 15px;
     border: none;
-    padding: 5px 10px;
     border-radius: 5px;
-    margin-left: 20px;
     cursor: pointer;
   }
 
-  .uploadbutton: hover {
-    text-decoration: underline;
+  button[type="submit"] {
+    background-color: #007bff;
+    color: white;
   }
 
-  .fileInput {
-    display: none; /* Hide the default file input */
+  button.removeButton {
+    background-color: #dc3545;
+    color: white;
   }
 
-  .removeButton {
-    background: #ff4d4d;
-    color: #fff;
-    border: none;
-    padding: 5px 5px;
-    border-radius: 0 px;
-    cursor: pointer;
+  input[type="file"] {
+    margin-bottom: 10px; /* Khoảng cách giữa input và nút */
   }
 
   .row {
@@ -822,14 +931,15 @@ const Container = styled.div`
   }
 
   .editable-field {
-    margin-bottom: 10px;
+    margin-bottom: -2px;
     display: flex;
     gap: 0px;
     align-items: center;
   }
 
   .editable-field p {
-    text-align: left; /* Align text to the left for consistent spacing */
+    text-align: left; 
+    width: 150px; 
   }
 
   .editable-field input {
@@ -840,7 +950,7 @@ const Container = styled.div`
     color: #fff;
     width: 50%;
     box-sizing: border-box;
-    margin-left: 10px;
+    
   }
 
   .search__bar {
