@@ -8,6 +8,7 @@ import Body from "./Body";
 import Footer from "./Footer";
 
 import { reducerCases } from "../utils/Constants";
+import Footer from "./Footer";
 
 export default function Spotify() {
   const [{ token }, dispatch] = useStateProvider();
@@ -34,6 +35,9 @@ export default function Spotify() {
         userId: data.id,
         userUrl: data.external_urls.spotify,
         name: data.display_name,
+        email: data.email,
+        images: data.images.url,
+        followers: data.followers.total,
       };
       dispatch({ type: reducerCases.SET_USER, userInfo });
     };
