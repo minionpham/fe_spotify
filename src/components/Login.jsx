@@ -54,6 +54,7 @@ export default function Login() {
         const redirect_uri = "http://localhost:3000/";
         const api_uri = "https://accounts.spotify.com/authorize";
         const scope = [
+            "streaming",
             "user-read-email",
             "user-read-private",
             "user-modify-playback-state",

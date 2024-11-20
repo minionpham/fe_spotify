@@ -22,6 +22,7 @@ export default function CurrentTrack() {
           name: response.data.item.name,
           artists: response.data.item.artists.map((artist) => artist.name),
           image: response.data.item.album.images[2].url,
+          uri: response.data.item.uri
         };
         dispatch({ type: reducerCases.SET_PLAYING, currentPlaying });
       } else {
@@ -29,7 +30,9 @@ export default function CurrentTrack() {
       }
     };
     getCurrentTrack();
-  }, [token, dispatch]);
+  }, [token, dispatch]); // hmm chi co tac dung la cap nhat track dang phat khi token thay doi
+
+
   return (
     <Container>
       {currentPlaying && (
