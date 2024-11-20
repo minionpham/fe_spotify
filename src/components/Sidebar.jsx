@@ -22,7 +22,7 @@ export default function Sidebar() {
       <div className="top__links">
         <div className="logo">
           <img
-            src="https://cdn-icons-png.flaticon.com/512/232/232413.png"
+            src="https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Full_Logo_RGB_White.png"
             alt="Spotify-Clone-Logo"
           />
         </div>
@@ -61,9 +61,10 @@ const Container = styled.div`
       text-align: center;
       margin: 1rem 0;
       img {
-        max-inline-size: 80%;
-        block-size: auto;
-        height: 200px;
+        max-width: 80%; 
+        height: auto; 
+        object-fit: contain; 
+        margin: 0 auto; 
       }
     }
     ul {
