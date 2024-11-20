@@ -5,7 +5,7 @@ import Navbar from "./Navbar";
 import axios from "axios";
 import { useStateProvider } from "../utils/StateProvider";
 import Body from "./Body";
-import Footer from "./Footer";
+
 
 import { reducerCases } from "../utils/Constants";
 import Footer from "./Footer";
@@ -35,9 +35,6 @@ export default function Spotify() {
         userId: data.id,
         userUrl: data.external_urls.spotify,
         name: data.display_name,
-        email: data.email,
-        images: data.images.url,
-        followers: data.followers.total,
       };
       dispatch({ type: reducerCases.SET_USER, userInfo });
     };
@@ -70,9 +67,8 @@ export default function Spotify() {
         </div>
       </div>
       <div className="spotify__footer">
-        <Footer />
+        <Footer/>
       </div>
-     
     </Container>
   );
 }
@@ -102,5 +98,11 @@ const Container = styled.div`
         }
       }
     }
+    
   }
+  ${'' /* .spotify__footer {
+    height: 100px;
+    width: 100%;
+    background-color: #282828;
+  } */}
 `;

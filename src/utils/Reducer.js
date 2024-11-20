@@ -7,9 +7,9 @@ export const initialState = {
   currentPlaying: null,
   playerState: false,
   selectedPlaylist: null,
-  selectedPlaylistId: "37i9dQZF1E35ttFyunwxnM",
+  selectedPlaylistId: "", // 37i9dQZF1E37jO8SiMT0yN
   newPlaylistName: "",
-  selectedTrack: null
+  selectedAlbumId: null,
 };
 
 const reducer = (state, action) => {
@@ -54,11 +54,28 @@ const reducer = (state, action) => {
         ...state,
         newPlaylistName: action.newPlaylistName,
       };  
-    case reducerCases.SET_SELECTED_TRACK: // Case mới cho bài hát đã chọn
-    return {
-     ...state,
-      selectedTrack: action.selectedTrack,
-    };
+    case reducerCases.SET_CONTEXT_MENU:
+      return {
+        ...state,
+        contextMenu: action.contextMenu,
+      };
+    case reducerCases.SET_SELECTED_PLAYLIST_ID:
+      return {
+        ...state,
+        selectedPlaylistId: action.selectedPlaylistId,
+      };
+    case reducerCases.REFRESH_PLAYLIST:
+      return {
+        ...state,
+        selectedPlaylistId: state.selectedPlaylistId, // Triggers useEffect in Body to refetch the playlist
+      };
+    case reducerCases.CLEAR_SELECTED_PLAYLIST: // Thêm xử lý này
+      return { ...state, selectedPlaylist: null }; // Reset selectedPlaylist
+    case "SET_SELECTED_ALBUM_ID":
+      return {
+        ...state,
+        selectedAlbumId: action.selectedAlbumId,
+      };
     default:
       return state;
   }
