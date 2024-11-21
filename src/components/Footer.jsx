@@ -35,6 +35,25 @@ export default function Footer() {
     }
 
     try {
+      const response = await axios.get(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const trackExists = response.data.items.some(
+        (item) => item.track.id === currentPlaying.id
+      );
+
+      if (trackExists) {
+        alert("Bài hát này đã có trong playlist!");
+        return;
+      }
+
       await axios.post(
         `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
         { uris: [`spotify:track:${currentPlaying.id}`] },
@@ -50,17 +69,18 @@ export default function Footer() {
       console.error("Lỗi không thêm được vào playlist", error);
       alert("Không thêm được vào playlist");
     }
+
     setShowPlaylists(false); // Hide playlist dropdown after adding the track
   };
 
   return (
     <Container>
-      <div className="current-track-and-button">
+      <div className="current-track-container">
         <CurrentTrack />
         <div className="button-container">
-          <button 
-            onClick={showPlaylists ? null : handleAddToPlaylistClick} 
-            className="add-button" 
+          <button
+            onClick={showPlaylists ? null : handleAddToPlaylistClick}
+            className="add-button"
             disabled={showPlaylists} // Disable button if dropdown is shown
           >
             +
@@ -68,9 +88,9 @@ export default function Footer() {
           {showPlaylists && (
             <div className="playlist-dropdown" ref={dropdownRef}>
               {playlists.map(({ name, id }) => (
-                <div 
-                  key={id} 
-                  onClick={() => handleAddSongToPlaylist(id)} 
+                <div
+                  key={id}
+                  onClick={() => handleAddSongToPlaylist(id)}
                   className="playlist-item"
                 >
                   {name}
@@ -80,8 +100,12 @@ export default function Footer() {
           )}
         </div>
       </div>
-      <PlayerControls />
-      <Volume />
+      <div className="player-controls">
+        <PlayerControls />
+      </div>
+      <div className="volume">
+        <Volume />
+      </div>
     </Container>
   );
 }
@@ -92,65 +116,23 @@ const Container = styled.div`
   background-color: #181818;
   border-top: 1px solid #282828;
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
+  grid-template-columns: 2fr 2fr 1fr;
   align-items: center;
   justify-content: center;
   padding: 0 1rem;
   position: relative;
 
-  .current-track-and-button {
+  .current-track-container {
     display: flex;
     align-items: center;
-    position: relative; /* Relative positioning for dropdown */
+    gap: 1rem;
+    position: relative; /* Ensure the parent container is relative for positioning */
   }
 
-  .button-container {
-    position: relative;
+  
+
+  .player-controls {
+    z-index: 0;
   }
 
-  .add-button {
-    margin-left: 1rem;
-    background-color: #1db954;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 2rem;
-    height: 2rem;
-    font-size: 1.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s ease;
-    &:hover {
-      background-color: #1ed760;
-    }
-    &:disabled {
-      background-color: #444; /* Change color when disabled */
-      cursor: not-allowed; /* Show not-allowed cursor */
-    }
-  }
-
-  .playlist-dropdown {
-    position: absolute;
-    top: -12rem; /* Adjusts dropdown to appear above the button */
-    right: 0; /* Aligns dropdown to the right edge of the button */
-    background-color: #333;
-    border-radius: 4px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
-    max-height: 10rem;
-    overflow-y: auto;
-    width: 200px;
-    z-index: 10;
-
-    .playlist-item {
-      padding: 0.5rem;
-      color: white;
-      cursor: pointer;
-      &:hover {
-        background-color: #444;
-      }
-    }
-  }
 `;
