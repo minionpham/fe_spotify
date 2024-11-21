@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { FaSearch } from "react-icons/fa";
 import { reducerCases } from "../utils/Constants";
@@ -27,6 +27,14 @@ export default function Navbar({ navBackground }) {
   const [errorMessage, setErrorMessage] = useState(null);
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isSettingOpen, setIsSettingOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchBarRef = useRef(null);
+
+  const handleSearchBarClick = (event) => {
+    if (searchBarRef.current && !searchBarRef.current.contains(event.target)) {
+      setShowSuggestions(false); // Hide suggestions
+    }
+  }
 
   const [img, setImg] = useState(null);
   const [imgUrl, setImgUrl] = useState("");
@@ -130,6 +138,12 @@ export default function Navbar({ navBackground }) {
     };
 
     fetchUser();
+
+    document.addEventListener("mousedown", handleSearchBarClick);
+    return () => {
+      document.removeEventListener("mousedown", handleSearchBarClick);
+    };
+
   }, []);
 
   const handleToggle = () => {
@@ -246,15 +260,16 @@ export default function Navbar({ navBackground }) {
 
   return (
     <Container navBackground={navBackground}>
-      <div className="search__bar">
+      <div className="search__bar" ref={searchBarRef}>
         <FaSearch />
         <input
           type="text"
           placeholder="Tracks, albums, or artists"
           value={searchQuery}
           onChange={handleInputChange}
+          onFocus={() => setShowSuggestions(true)}
         />
-        {searchQuery && (
+        {showSuggestions && searchQuery && (
           <ul className="suggestions">
             {suggestions.map((suggestion, index) => (
               <li
