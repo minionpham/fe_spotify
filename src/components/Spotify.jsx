@@ -100,9 +100,9 @@ const Container = styled.div`
     }
     
   }
-  ${'' /* .spotify__footer {
+  .spotify__footer {
     height: 100px;
     width: 100%;
     background-color: #282828;
-  } */}
+  }
 `;

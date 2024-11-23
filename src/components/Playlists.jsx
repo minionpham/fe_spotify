@@ -105,9 +105,9 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
         },
       }
     );
-    if (response.data.items.length === 0) {
-      alert("Playlist này rỗng!");
-    }
+    // if (response.data.items.length === 0) {
+    //   alert("Playlist này rỗng!");
+    // }
   };
 
   const handleRightClick = (event, id) => {
@@ -238,6 +238,19 @@ const Container = styled.div`
       }
     }
   }
+  .empty-playlist {
+  margin: 2rem;
+  text-align: center;
+  color: #b3b3b3;
+  h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #fff;
+  }
+  p {
+    font-size: 1.2rem;
+  }
+}
 `;
 
 const ContextMenu = styled.div`
