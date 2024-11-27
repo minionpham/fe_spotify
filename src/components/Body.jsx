@@ -18,36 +18,54 @@ export default function Body({ headerBackground }) {
   useEffect(() => {
     dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist: null });
     const getInitialPlaylist = async () => {
-      const response = await axios.get(
-        `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
-        {
-          headers: {
-            Authorization: "Bearer " + token,
-            "Content-Type": "application/json",
-          },
+      try {
+        const response = await axios.get(
+          `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
+          {
+            headers: {
+              Authorization: "Bearer " + token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+    
+        const playlistData = response.data;
+    
+        // Kiểm tra dữ liệu trả về
+        if (!playlistData) {
+          console.error("Playlist data is null or undefined!");
+          return;
         }
-      );
-      const selectedPlaylist = {
-        id: response.data.id,
-        name: response.data.name,
-        description: response.data.description.startsWith("<a")
-          ? ""
-          : response.data.description,
-        image: response.data.images[0]?.url || "",  // Sử dụng URL ảnh trống nếu không có ảnh
-        tracks: response.data.tracks.items.map(({ track }) => ({
-          id: track.id,
-          name: track.name,
-          artists: track.artists.map((artist) => artist.name),
-          image: track.album.images[2]?.url || "",  // Sử dụng URL ảnh trống nếu không có ảnh
-          duration: track.duration_ms,
-          album: track.album.name,
-          context_uri: track.album.uri,
-          track_number: track.track_number,
-          uri: track.uri
-        })),
-      };
-      dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist });
+    
+        const playlistImage = playlistData.images?.[0]?.url || ""; // Dùng URL rỗng nếu không có ảnh
+        const playlistTracks = playlistData.tracks?.items || []; // Dùng mảng rỗng nếu không có bài hát
+    
+        const selectedPlaylist = {
+          id: playlistData.id,
+          name: playlistData.name,
+          description: playlistData.description.startsWith("<a")
+            ? ""
+            : playlistData.description,
+          image: playlistImage,
+          tracks: playlistTracks.map(({ track }) => ({
+            id: track?.id,
+            name: track?.name,
+            artists: track?.artists.map((artist) => artist.name) || [],
+            image: track?.album?.images?.[2]?.url || "", // Dùng URL rỗng nếu không có ảnh album
+            duration: track?.duration_ms,
+            album: track?.album?.name || "",
+            context_uri: track?.album?.uri,
+            track_number: track?.track_number,
+            uri: track?.uri,
+          })),
+        };
+    
+        dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist });
+      } catch (error) {
+        console.error("Error fetching playlist:", error);
+      }
     };
+    
     if (selectedPlaylistId) getInitialPlaylist();
   }, [token, dispatch, selectedPlaylistId]);
 
@@ -106,125 +124,170 @@ export default function Body({ headerBackground }) {
   };
 
   const handleAddToPlaylist = async (trackId, playlistId) => {
-  try {
-    // Lấy thông tin playlist hiện tại
-    const playlistResponse = await axios.get(
-      `https://api.spotify.com/v1/playlists/${playlistId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+    try {
+      // Lấy thông tin playlist hiện tại
+      const playlistResponse = await axios.get(
+        `https://api.spotify.com/v1/playlists/${playlistId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      // Kiểm tra nếu playlist không tồn tại hoặc không có tracks
+      if (!playlistResponse.data || !playlistResponse.data.tracks || !playlistResponse.data.tracks.items) {
+        console.error("Playlist hoặc danh sách bài hát không tồn tại!");
+        alert("Không thể lấy thông tin danh sách phát.");
+        return;
       }
-    );
-
-    // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
-    const trackExists = playlistResponse.data.tracks.items.some(
-      (item) => item.track.id === trackId
-    );
-
-    if (trackExists) {
-      alert("Bài hát đã có trong danh sách phát!");
-      return; // Thoát nếu bài hát đã tồn tại
+  
+      // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
+      const trackExists = playlistResponse.data.tracks.items.some(
+        (item) => item.track.id === trackId
+      );
+  
+      if (trackExists) {
+        alert("Bài hát đã có trong danh sách phát!");
+        return; // Thoát nếu bài hát đã tồn tại
+      }
+  
+      // Thêm bài hát vào playlist
+      await axios.post(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+        { uris: [`spotify:track:${trackId}`] },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      alert("Đã thêm bài hát vào danh sách phát!");
+  
+      // Cập nhật lại danh sách các playlist
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Đợi API cập nhật
+      const playlistsResponse = await axios.get(
+        `https://api.spotify.com/v1/me/playlists`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      // Tạo danh sách các playlist đã cập nhật
+      const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
+        id: playlist.id,
+        name: playlist.name,
+        image: playlist.images?.[0]?.url || "", // Kiểm tra kỹ hình ảnh trước khi truy cập
+      }));
+  
+      // Cập nhật state danh sách playlist
+      dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
+    } catch (error) {
+      console.error("Error adding track to playlist:", error);
+      alert("Đã xảy ra lỗi khi thêm bài hát vào danh sách phát.");
+    } finally {
+      setShowPlaylistDropdown(null); // Đóng dropdown sau khi hoàn thành
     }
+  };
 
-    // Thêm bài hát vào playlist
-    await axios.post(
-      `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-      { uris: [`spotify:track:${trackId}`] },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+
+  const handleRemoveFromPlaylist = async (trackId) => {
+    try {
+      // Kiểm tra nếu playlist ID và track ID tồn tại
+      if (!selectedPlaylistId || !trackId) {
+        console.error("Playlist ID hoặc Track ID không tồn tại!");
+        return;
       }
-    );
-
-    alert("Đã thêm bài hát vào danh sách phát!");
-
-    // Cập nhật lại danh sách các playlist
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const playlistsResponse = await axios.get(
-      `https://api.spotify.com/v1/me/playlists`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+  
+      // Xóa bài hát khỏi playlist qua API Spotify
+      await axios.delete(
+        `https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`,
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+          data: {
+            tracks: [{ uri: `spotify:track:${trackId}` }],
+          },
+        }
+      );
+  
+      // Đợi API cập nhật dữ liệu
+      await new Promise((resolve) => setTimeout(resolve, 500));
+  
+      // Lấy thông tin playlist đang chọn
+      const playlistResponse = await axios.get(
+        `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      // Cập nhật danh sách track của playlist đang chọn
+      const updatedTracks =
+        playlistResponse.data.tracks.items.map((item) => ({
+          id: item.track.id,
+          name: item.track.name,
+          artists: item.track.artists.map((artist) => artist.name).join(", "),
+          image: item.track.album.images?.[0]?.url || "", // Hình ảnh của bài hát
+        })) || [];
+  
+      // Nếu playlist rỗng, đặt hình ảnh mặc định hoặc trống
+      const updatedImage =
+        updatedTracks.length > 0
+          ? updatedTracks[0].image
+          : ""; // Playlist rỗng thì không có ảnh
+  
+      // Cập nhật playlist đang chọn trong state
+      dispatch({
+        type: reducerCases.SET_PLAYLIST,
+        selectedPlaylist: {
+          ...selectedPlaylist,
+          tracks: updatedTracks,
+          image: updatedImage,
         },
-      }
-    );
+      });
+  
+      // Cập nhật danh sách các playlist
+      const playlistsResponse = await axios.get(
+        `https://api.spotify.com/v1/me/playlists`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
+        id: playlist.id,
+        name: playlist.name,
+        image: playlist.images?.[0]?.url || "",
+      }));
+  
+      dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
+  
+      console.log("Track removed and playlist updated successfully!");
+      alert("Đã xóa bài hát khỏi danh sách phát!");
+    } catch (error) {
+      console.error("Error removing track from playlist:", error);
+      alert("Đã xảy ra lỗi khi xóa bài hát khỏi danh sách phát.");
+    } finally {
+      setShowPlaylistDropdown(null); // Đóng dropdown sau khi hoàn thành
+    }
+  };
+  
 
-    const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
-      id: playlist.id,
-      name: playlist.name,
-      image: playlist.images[0]?.url || "",
-    }));
-
-    dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
-  } catch (error) {
-    console.error("Error adding track to playlist:", error);
-    alert("Đã xảy ra lỗi khi thêm bài hát vào danh sách phát.");
-  } finally {
-    setShowPlaylistDropdown(null); // Đóng dropdown sau khi hoàn thành
-  }
-};
-
-
-const handleRemoveFromPlaylist = async (trackId) => {
-  try {
-    if (!selectedPlaylistId) return;
-
-    await axios.delete(
-      `https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        data: {
-          tracks: [{ uri: `spotify:track:${trackId}` }],
-        },
-      }
-    );
-
-    alert("Track removed from playlist!");
-
-    // Cập nhật lại playlist sau khi xóa
-    const response = await axios.get(
-      `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const updatedPlaylist = {
-      id: response.data.id,
-      name: response.data.name,
-      description: response.data.description.startsWith("<a")
-        ? ""
-        : response.data.description,
-      image: response.data.images[0]?.url || "",
-      tracks: response.data.tracks.items.map(({ track }) => ({
-        id: track.id,
-        name: track.name,
-        artists: track.artists.map((artist) => artist.name),
-        image: track.album.images[2]?.url || "",
-        duration: track.duration_ms,
-        album: track.album.name,
-        context_uri: track.album.uri,
-        track_number: track.track_number,
-      })),
-    };
-
-    dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist: updatedPlaylist });
-  } catch (error) {
-    console.error("Error removing track from playlist:", error);
-    alert("Error removing track from playlist.");
-  }
-};
 
   const msToMinutesAndSeconds = (ms) => {
     var minutes = Math.floor(ms / 60000);
@@ -249,6 +312,13 @@ const handleRemoveFromPlaylist = async (trackId) => {
               <p className="description">{selectedPlaylist.description}</p>
             </div>
           </div>
+          {/* Kiểm tra nếu playlist rỗng */}
+        {selectedPlaylist.tracks.length === 0 ? (
+          <div className="empty-playlist">
+            <h2>Playlist của bạn đang trống</h2>
+            <p>Hãy thêm bài hát vào để bắt đầu nghe nhạc!</p>
+          </div>
+        ) : (
           <div className="list">
             <div className="header-row">
               <div className="col">
@@ -357,6 +427,7 @@ const handleRemoveFromPlaylist = async (trackId) => {
               )}
             </div>
           </div>
+          )}
         </>
       ) : (
         <Home /> // Show Home component when no playlist is selected
