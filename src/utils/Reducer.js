@@ -10,6 +10,7 @@ export const initialState = {
   selectedPlaylistId: "", // 37i9dQZF1E37jO8SiMT0yN
   newPlaylistName: "",
   selectedAlbumId: null,
+  selectedTrack: null
 };
 
 const reducer = (state, action) => {
@@ -69,6 +70,12 @@ const reducer = (state, action) => {
         ...state,
         selectedPlaylistId: state.selectedPlaylistId, // Triggers useEffect in Body to refetch the playlist
       };
+    case reducerCases.SET_SELECTED_TRACK:
+      return{
+        ...state,
+        selectedTrack: action.selectedTrack,
+      }; // chon vao 1 track
+
     case reducerCases.CLEAR_SELECTED_PLAYLIST: // Thêm xử lý này
       return { ...state, selectedPlaylist: null }; // Reset selectedPlaylist
     case "SET_SELECTED_ALBUM_ID":

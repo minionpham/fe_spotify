@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
-import CurrentTrack from "./CurrentTrack";
 import PlayerControls from "./PlayerControls";
-import Volume from "./Volume";
 import { useStateProvider } from "../utils/StateProvider";
 import axios from "axios";
 
@@ -76,7 +74,7 @@ export default function Footer() {
   return (
     <Container>
       <div className="current-track-container">
-        <CurrentTrack />
+     
         <div className="button-container">
           <button
             onClick={showPlaylists ? null : handleAddToPlaylistClick}
@@ -103,9 +101,7 @@ export default function Footer() {
       <div className="player-controls">
         <PlayerControls />
       </div>
-      <div className="volume">
-        <Volume />
-      </div>
+     
     </Container>
   );
 }
