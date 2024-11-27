@@ -25,33 +25,6 @@ export default function PlayerControls() {
       console.log("Current playing track URI:", currentPlaying.uri); // check log
     }
   }, [currentPlaying]);
-  
-  // // useEffect(() => {
-  // //   if(selectedTrack){
-  // //     const addToQueue = async (uri) => {
-  // //           try {
-  // //             const response = await axios.post(
-  // //               `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
-  // //               {},
-  // //               {
-  // //                 headers: {
-  // //                   "Content-Type": "application/json",
-  // //                   Authorization: "Bearer " + token,
-  // //                 },
-  // //               }
-  // //             );
-        
-  // //             if (response.status === 204) {
-  // //               console.log("Track added to the queue successfully!");
-  // //             }
-  // //           } catch (error) {
-  // //             console.error(error);
-  // //           }
-  // //         };
-  // //         addToQueue(selectedTrack.uri)
-  // //   }
-
-  // },[selectedTrack, dispatch]);
 
   const handlePlayerStateChange = (state) => {
     if (!state.isPlaying) setPlay(false);
@@ -75,7 +48,7 @@ export default function PlayerControls() {
         }
       );
       console.log(response);
-    
+      
       if (response.data !== "") {
         const currentPlaying = {
           id: response.data.item.id,
@@ -88,16 +61,17 @@ export default function PlayerControls() {
           track_number: response.data.item.track_number,
           uri:response.data.item.uri
         };
+        dispatch({ type: reducerCases.SET_PLAYING, currentPlaying });
         setTrackUri(currentPlaying.uri)
-        setPlay(true)
       } else {
-        console.log("Error call api");
+        dispatch({ type: reducerCases.SET_PLAYING, currentPlaying: null });
       }
     };
     getCurrentTrack(); 
-  },[token, dispatch]) // callback cua useEffect dc goi khi mounted
-
-
+    console.log(currentPlaying);
+       
+  },[token,dispatch]) // callback cua useEffect goi dung 1 lan 
+  
   return (
     <Container>
       {(
