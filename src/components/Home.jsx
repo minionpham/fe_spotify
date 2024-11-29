@@ -1,243 +1,276 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import axios from "axios";
 import { useStateProvider } from "../utils/StateProvider";
 
 export default function Home() {
   const [{ token }, dispatch] = useStateProvider();
-  const [featuredPlaylists, setFeaturedPlaylists] = useState([]);
-  const [newReleases, setNewReleases] = useState([]);
-  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
+  const [songs, setSongs] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    const fetchFeaturedPlaylists = async () => {
+    const fetchTopSongs = async () => {
       try {
-        const response = await axios.get(
-          "https://api.spotify.com/v1/browse/featured-playlists",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
+        const response = await axios.get("http://localhost:5000/api/songs");
+        const songData = response.data;
+
+        const updatedSongs = await Promise.all(
+          songData.map(async (song) => {
+            try {
+              const trackResponse = await axios.get(
+                `https://api.spotify.com/v1/tracks/${song.ID}`,
+                {
+                  headers: {
+                    Authorization: "Bearer " + token,
+                  },
+                }
+              );
+              const imageUrl =
+                trackResponse.data.album.images[0]?.url ||
+                "default_image_url_here.jpg";
+              return { ...song, imageUrl };
+            } catch (error) {
+              console.error("Error fetching song image:", error);
+              return {
+                ...song,
+                imageUrl: "default_image_url_here.jpg",
+              };
+            }
+          })
         );
-        setFeaturedPlaylists(response.data.playlists.items);
+
+        setSongs(updatedSongs);
       } catch (error) {
-        console.error("Error fetching featured playlists:", error);
+        console.error("Error fetching top songs:", error);
       }
     };
 
-    const fetchNewReleases = async () => {
-      try {
-        const response = await axios.get(
-          "https://api.spotify.com/v1/browse/new-releases",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        setNewReleases(response.data.albums.items);
-      } catch (error) {
-        console.error("Error fetching new releases:", error);
-      }
-    };
-
-    const fetchRecentlyPlayed = async () => {
-      try {
-        const response = await axios.get(
-          "https://api.spotify.com/v1/me/player/recently-played",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        setRecentlyPlayed(response.data.items);
-      } catch (error) {
-        console.error("Error fetching recently played:", error);
-      }
-    };
-
-    fetchFeaturedPlaylists();
-    fetchNewReleases();
-    fetchRecentlyPlayed();
+    fetchTopSongs();
   }, [token]);
 
-  const handlePlaylistClick = (playlistId) => {
-    dispatch({
-      type: "SET_SELECTED_PLAYLIST_ID",
-      selectedPlaylistId: playlistId,
-    });
+  const handleNext = () => {
+    if (currentIndex + 5 < songs.length) {
+      setCurrentIndex(currentIndex + 5);
+    }
   };
 
-  const handleTrackClick = (trackId) => {
-    dispatch({
-      type: "SET_SELECTED_TRACK_ID",
-      selectedTrackId: trackId,
-    });
+  const handlePrev = () => {
+    if (currentIndex - 5 >= 0) {
+      setCurrentIndex(currentIndex - 5);
+    }
   };
 
-  const scrollHorizontally = (id, direction) => {
-    const container = document.getElementById(id);
-    const scrollAmount = direction === "left" ? -300 : 300;
-    container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  const handlePlaySong = async (song) => {
+    try {
+      const trackResponse = await axios.get(
+        `https://api.spotify.com/v1/tracks/${song.ID}`,
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
+
+      const selectedTrack = {
+        id: trackResponse.data.id,
+        name: trackResponse.data.name,
+        artists: trackResponse.data.artists
+          .map((artist) => artist.name)
+          .join(", "),
+        image:
+          trackResponse.data.album.images[0]?.url || "default_image_url_here.jpg",
+        duration: trackResponse.data.duration_ms,
+        album: trackResponse.data.album.name,
+        context_uri: trackResponse.data.album.uri,
+        track_number: trackResponse.data.track_number,
+        uri: trackResponse.data.uri,
+      };
+
+      dispatch({
+        type: "SET_SELECTED_TRACK",
+        selectedTrack,
+      });
+
+      await axios.put(
+        `https://api.spotify.com/v1/me/player/play`,
+        {
+          uris: [selectedTrack.uri],
+        },
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error playing the song:", error);
+    }
   };
 
   return (
     <Container>
-      <Section>
-        <h2>Featured Playlists</h2>
-        <ScrollWrapper>
-          <button onClick={() => scrollHorizontally("featuredPlaylists", "left")}>
-            {"<"}
-          </button>
-          <PlaylistRow id="featuredPlaylists">
-            {featuredPlaylists.map((playlist) => (
-              <Card
-                key={playlist.id}
-                onClick={() => handlePlaylistClick(playlist.id)}
-              >
-                <img
-                  src={
-                    playlist.images?.[0]?.url || "default-image-url.jpg"
-                  }
-                  alt={playlist.name}
-                />
-                <h3>{playlist.name}</h3>
-              </Card>
-            ))}
-          </PlaylistRow>
-          <button onClick={() => scrollHorizontally("featuredPlaylists", "right")}>
-            {">"}
-          </button>
-        </ScrollWrapper>
-      </Section>
-
-      <Section>
-        <h2>New Releases</h2>
-        <ScrollWrapper>
-          <button onClick={() => scrollHorizontally("newReleases", "left")}>
-            {"<"}
-          </button>
-          <PlaylistRow id="newReleases">
-            {newReleases.map((album) => (
-              <Card key={album.id}>
-                <img
-                  src={album.images?.[0]?.url || "default-image-url.jpg"}
-                  alt={album.name}
-                />
-                <h3>{album.name}</h3>
-              </Card>
-            ))}
-          </PlaylistRow>
-          <button onClick={() => scrollHorizontally("newReleases", "right")}>
-            {">"}
-          </button>
-        </ScrollWrapper>
-      </Section>
-
-      <Section>
-        <h2>Recently Played</h2>
-        <ScrollWrapper>
-          <button onClick={() => scrollHorizontally("recentlyPlayed", "left")}>
-            {"<"}
-          </button>
-          <PlaylistRow id="recentlyPlayed">
-            {recentlyPlayed.map((track) => (
-              <Card key={track.track.id + "-" + track.played_at}>
-                <img
-                  src={
-                    track.track.album.images?.[0]?.url ||
-                    "default-image-url.jpg"
-                  }
-                  alt={track.track.name}
-                />
-                <h3>{track.track.name}</h3>
-              </Card>
-            ))}
-          </PlaylistRow>
-          <button onClick={() => scrollHorizontally("recentlyPlayed", "right")}>
-            {">"}
-          </button>
-        </ScrollWrapper>
-      </Section>
+      <Title>Viet Nam Top Songs Today</Title>
+      <SongsWrapper>
+        <NavButtonWrapper left>
+          <NavButton onClick={handlePrev} disabled={currentIndex === 0}>
+            &lt;
+          </NavButton>
+        </NavButtonWrapper>
+        <SongCardsWrapper>
+          {songs.slice(currentIndex, currentIndex + 5).map((song) => (
+            <SongCard key={song.ID} onClick={() => handlePlaySong(song)}>
+              <SongImage src={song.imageUrl} alt={song.Name} />
+              <SongDetails>
+                <SongName>{song.Name}</SongName>
+                <ArtistName>{song.Artist}</ArtistName>
+              </SongDetails>
+            </SongCard>
+          ))}
+        </SongCardsWrapper>
+        <NavButtonWrapper right>
+          <NavButton onClick={handleNext} disabled={currentIndex + 5 >= songs.length}>
+            &gt;
+          </NavButton>
+        </NavButtonWrapper>
+      </SongsWrapper>
     </Container>
   );
 }
 
 const Container = styled.div`
-  padding: 2rem;
-  color: white;
-`;
-
-const Section = styled.div`
-  margin-bottom: 3rem;
-  h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-  }
-`;
-
-const ScrollWrapper = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
-
-  button {
-    background: none;
-    color: white;
-    border: 1px solid white;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    margin: 0 1rem;
-    transition: 0.2s ease;
-
-    &:hover {
-      background: white;
-      color: black;
-    }
-  }
+  min-height: 100vh;
+  background: linear-gradient(180deg, #121212 0%, #1a1a1a 100%);
+  color: white;
+  padding: 3rem;
+  box-sizing: border-box;
+  font-family: 'Roboto', sans-serif;
 `;
 
-const PlaylistRow = styled.div`
-  display: flex;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  gap: 1.5rem;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const Card = styled.div`
-  background-color: #333;
-  padding: 1rem;
-  border-radius: 8px;
+const Title = styled.h2`
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 40px;
   text-align: center;
-  min-width: 150px;
-  flex-shrink: 0;
-  cursor: pointer;
+  color: #f5f5f5;
+`;
+
+const SongsWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 100%;
+`;
+
+const SongCardsWrapper = styled.div`
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 20px;
+  overflow: hidden;
+  width: 100%;
+  justify-content: center;
+  transition: transform 0.5s ease-in-out;
+`;
+
+const SongCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #2e2e2e;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: 200px;
+  cursor: pointer;
+  overflow: hidden;
+  height: 300px; /* Fixed height for consistency */
+  
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  }
+`;
+
+const SongDetails = styled.div`
+  margin-top: 15px;
+  text-align: center;
+  flex-grow: 1; /* Allow text to grow but won't stretch the card */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+`;
+
+const SongName = styled.p`
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #fff;
+  display: -webkit-box; /* Use flexbox to manage text wrapping */
+  -webkit-line-clamp: 2; /* Limit the text to two lines */
+  -webkit-box-orient: vertical; /* Ensure text wraps vertically */
+  overflow: hidden; /* Hide overflowing text */
+  text-overflow: ellipsis; /* Show ellipsis when text overflows */
+`;
+
+const ArtistName = styled.p`
+  font-size: 14px;
+  color: #b0b0b0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Handle overflow if the artist name is too long */
+`;
+
+
+const SongImage = styled.img`
+  width: 150px;
+  height: 150px;
+  border-radius: 10px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 
   &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+    transform: scale(1.1);
+  }
+`;
+
+const NavButtonWrapper = styled.div`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  ${props => (props.left ? 'left: -20px;' : 'right: -20px;')}
+  z-index: 10;
+`;
+
+const NavButton = styled.button`
+  background-color: #4c4c4c;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px;
+  transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+  margin: 0 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  opacity: 0.5; /* Make it more transparent by default */
+
+  &:disabled {
+    background-color: #888;
+    cursor: not-allowed;
+    opacity: 0.5; /* Ensure the opacity is consistent when disabled */
   }
 
-  img {
-    width: 100%;
-    height: 150px;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
+  &:hover:not(:disabled) {
+    background-color: #1DB954;
+    transform: scale(1.1);
+    opacity: 1; /* Increase opacity when hovered */
   }
 
-  h3 {
-    font-size: 1rem;
-    margin: 0.5rem 0;
+  &:active:not(:disabled) {
+    background-color: #444;
   }
 `;
