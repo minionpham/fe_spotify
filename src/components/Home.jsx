@@ -230,7 +230,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(180deg, #121212 0%, #1a1a1a 100%);
+  background: transparent;
   color: white;
   padding: 3rem;
   box-sizing: border-box;
