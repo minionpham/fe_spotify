@@ -9,12 +9,43 @@ export default function Footer() {
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlaylists, setSelectedPlaylists] = useState([]);
+  const [playlistsWithCurrentTrack, setPlaylistsWithCurrentTrack] = useState({});
   const dropdownRef = useRef(null);
 
   // Filter playlists based on search query
   const filteredPlaylists = playlists.filter(({ name }) =>
     name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Check which playlists contain the currently playing track
+  const checkTrackInPlaylists = async () => {
+    if (!currentPlaying || !currentPlaying.id) return;
+
+    const updatedPlaylists = {};
+    for (const playlist of playlists) {
+      try {
+        const response = await axios.get(
+          `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        updatedPlaylists[playlist.id] = response.data.items.some(
+          (item) => item.track.id === currentPlaying.id
+        );
+      } catch (error) {
+        console.error("Error checking track in playlist", error);
+      }
+    }
+    setPlaylistsWithCurrentTrack(updatedPlaylists);
+  };
+
+  useEffect(() => {
+    checkTrackInPlaylists();
+  }, [currentPlaying, playlists]);
 
   const handleAddToPlaylist = async (trackId, playlistId) => {
     try {
@@ -58,14 +89,17 @@ export default function Footer() {
       );
   
       alert("Đã thêm bài hát vào danh sách phát!");
+  
+      // After successfully adding the track, update the playlist status
+      await checkTrackInPlaylists(); // Refetch the playlist status
+  
     } catch (error) {
-      console.error("Error adding track to playlist:", error);
+      console.error("Error adding track to playlist:", error.response?.data || error);
       alert("Đã xảy ra lỗi khi thêm bài hát vào danh sách phát.");
     } finally {
-      setShowPlaylists(false);
+      setShowPlaylists(false); // Close the dropdown
     }
   };
-  
 
   // Toggle playlist dropdown
   const handleAddToPlaylistClick = () => {
@@ -84,79 +118,20 @@ export default function Footer() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Check if a playlist already contains the current track
-  const checkTrackInPlaylist = async (playlistId) => {
-    try {
-      const response = await axios.get(
-        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      return response.data.items.some(
-        (item) => item.track.id === currentPlaying.id
-      );
-    } catch (error) {
-      console.error("Error checking track in playlist", error);
-      return false;
-    }
-  };
-
-
   const togglePlaylistSelection = async (playlistId) => {
     if (!currentPlaying || !currentPlaying.id) {
       alert("Không có bài hát nào đang phát!");
       return;
     }
-  
+
     await handleAddToPlaylist(currentPlaying.id, playlistId);
-  
+
     setSelectedPlaylists((prev) =>
       prev.includes(playlistId)
         ? prev.filter((id) => id !== playlistId)
         : [...prev, playlistId]
     );
   };
-  
-  // Toggle playlist selection
-  // const togglePlaylistSelection = async (playlistId) => {
-  //   if (!currentPlaying || !currentPlaying.id) {
-  //     alert("No track is currently playing!");
-  //     return;
-  //   }
-
-  //   const isSelected = selectedPlaylists.includes(playlistId);
-
-  //   if (isSelected) {
-  //     setSelectedPlaylists((prev) =>
-  //       prev.filter((id) => id !== playlistId)
-  //     );
-  //   } else {
-  //     const trackExists = await checkTrackInPlaylist(playlistId);
-  //     if (!trackExists) {
-  //       try {
-  //         await axios.post(
-  //           `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-  //           { uris: [`spotify:track:${currentPlaying.id}`] },
-  //           {
-  //             headers: {
-  //               Authorization: `Bearer ${token}`,
-  //               "Content-Type": "application/json",
-  //             },
-  //           }
-  //         );
-  //       } catch (error) {
-  //         console.error("Error adding track to playlist", error);
-  //         alert("Không thể thêm vào playlist");
-  //         return;
-  //       }
-  //     }
-  //     setSelectedPlaylists((prev) => [...prev, playlistId]);
-  //   }
-  // };
 
   return (
     <Container>
@@ -180,11 +155,9 @@ export default function Footer() {
                   >
                     <div className="playlist-info">
                       <span>{name}</span>
-                      <div
-                        className={`circle ${
-                          selectedPlaylists.includes(id) ? "selected" : ""
-                        }`}
-                      />
+                      <div className={`circle ${playlistsWithCurrentTrack[id] ? "selected" : ""}`}>
+                        {playlistsWithCurrentTrack[id] && <span className="checkmark">✔</span>}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -195,9 +168,8 @@ export default function Footer() {
             </div>
           )}
           <button
-            onClick={!showPlaylists ? handleAddToPlaylistClick : null}
+            onClick={handleAddToPlaylistClick}
             className="add-button"
-            disabled={showPlaylists}
           >
             +
           </button>
@@ -279,16 +251,31 @@ const Container = styled.div`
         background-color: #767676;
       }
 
-      .circle {
-        width: 20px;
-        height: 20px;
-        border: 2px solid white;
-        border-radius: 50%;
-      }
+      .playlist-info {
+        display: flex;
+        align-items: center;
 
-      .circle.selected {
-        background-color: #1db954;
-        border-color: #1db954;
+        .circle {
+          width: 20px;
+          height: 20px;
+          border: 2px solid white;
+          border-radius: 50%;
+          position: relative; // Position relative for absolute checkmark
+          margin-left: 10px;
+
+          &.selected {
+            background-color: #1db954;
+            border-color: #1db954;
+          }
+
+          .checkmark {
+            position: absolute;
+            top: 0;
+            left: 2px; // Adjust left position for centering
+            font-size: 16px; // Adjust size if necessary
+            color: white; // Change color to white for contrast
+          }
+        }
       }
     }
 
