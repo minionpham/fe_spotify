@@ -8,7 +8,7 @@ import { reducerCases } from "../utils/Constants";
 import Home from "./Home"; // Import Home component
 
 export default function Body({ headerBackground }) {
-  const [{ token, selectedPlaylist, selectedPlaylistId, playlists, selectedTrack }, dispatch] =
+  const [{ token, selectedPlaylist, selectedPlaylistId, playlists }, dispatch] =
     useStateProvider();
   const [showDropdown, setShowDropdown] = useState(null);
   const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(null); // State for playlist dropdown
@@ -250,30 +250,30 @@ const handleRemoveFromPlaylist = async (trackId) => {
 
                     // add queue
 
-                    // for(let i= index; i< selectedPlaylist.tracks.length; i++) {
-                    //   const track = selectedPlaylist.tracks[i];
-                    //   const addToQueue = async (uri) => {
-                    //     try {
-                    //       const response = await axios.post(
-                    //         `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
-                    //         {},
-                    //         {
-                    //           headers: {
-                    //             "Content-Type": "application/json",
-                    //             Authorization: "Bearer " + token,
-                    //           },
-                    //         }
-                    //       );
+                    for(let i= index+1; i< selectedPlaylist.tracks.length; i++) {
+                      const track = selectedPlaylist.tracks[i];
+                      const addToQueue = async (uri) => {
+                        try {
+                          const response = await axios.post(
+                            `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
+                            {},
+                            {
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: "Bearer " + token,
+                              },
+                            }
+                          );
                     
-                    //       if (response.status === 204) {
-                    //         console.log("Track added to the queue successfully!");
-                    //       }
-                    //     } catch (error) {
-                    //       console.error(error);
-                    //     }
-                    //   };
-                    //   addToQueue(track.uri)    
-                    // }
+                          if (response.status === 204) {
+                            console.log("Track added to the queue successfully!");
+                          }
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      };
+                      addToQueue(track.uri)    
+                    }
                         
                   }}               
                   >

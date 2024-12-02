@@ -25,33 +25,6 @@ export default function PlayerControls() {
       console.log("Current playing track URI:", currentPlaying.uri); // check log
     }
   }, [currentPlaying]);
-  
-  // // useEffect(() => {
-  // //   if(selectedTrack){
-  // //     const addToQueue = async (uri) => {
-  // //           try {
-  // //             const response = await axios.post(
-  // //               `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
-  // //               {},
-  // //               {
-  // //                 headers: {
-  // //                   "Content-Type": "application/json",
-  // //                   Authorization: "Bearer " + token,
-  // //                 },
-  // //               }
-  // //             );
-        
-  // //             if (response.status === 204) {
-  // //               console.log("Track added to the queue successfully!");
-  // //             }
-  // //           } catch (error) {
-  // //             console.error(error);
-  // //           }
-  // //         };
-  // //         addToQueue(selectedTrack.uri)
-  // //   }
-
-  // },[selectedTrack, dispatch]);
 
   const handlePlayerStateChange = (state) => {
     if (!state.isPlaying) setPlay(false);
