@@ -16,42 +16,62 @@ export default function Home() {
       try {
         const response = await axios.get("http://localhost:5000/api/songs");
         const songData = response.data;
-
+  
+        // Helper function to split the songs into chunks of 50
+        const chunkArray = (arr, size) => {
+          const result = [];
+          for (let i = 0; i < arr.length; i += size) {
+            result.push(arr.slice(i, i + size));
+          }
+          return result;
+        };
+  
+        const songChunks = chunkArray(songData, 50); // Split into chunks of 50 songs each
         const updatedSongs = await Promise.all(
-          songData.map(async (song) => {
+          songChunks.map(async (chunk) => {
             try {
+              // Create a string of IDs for this chunk of songs
+              const ids = chunk.map((song) => song.ID).join(',');
+  
+              // Fetch details for the batch of songs
               const trackResponse = await axios.get(
-                `https://api.spotify.com/v1/tracks/${song.ID}`,
+                `https://api.spotify.com/v1/tracks?ids=${ids}`,
                 {
                   headers: {
                     Authorization: "Bearer " + token,
                   },
                 }
               );
-              const imageUrl =
-                trackResponse.data.album.images[0]?.url ||
-                "https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png"; // Fallback image
-              return { ...song, imageUrl };
+  
+              // Process the response data to include image URLs
+              return chunk.map((song, index) => {
+                const track = trackResponse.data.tracks[index];
+                const imageUrl =
+                  track?.album?.images[0]?.url ||
+                  "https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png"; // Fallback image
+                return { ...song, imageUrl };
+              });
             } catch (error) {
-              console.error("Error fetching song image:", error);
-              return {
+              console.error("Error fetching song details:", error);
+              return chunk.map((song) => ({
                 ...song,
                 imageUrl:
                   "https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png", // Fallback image
-              };
+              }));
             }
           })
         );
-
-        setSongs(updatedSongs);
+  
+        // Flatten the array of song chunks and update the state
+        setSongs(updatedSongs.flat());
       } catch (error) {
         console.error("Error fetching top songs:", error);
       }
     };
-
+  
     fetchTopSongs();
   }, [token]);
-
+  
   useEffect(() => {
     const fetchPlaylists = async () => {
       try {
@@ -168,13 +188,17 @@ export default function Home() {
           </NavButton>
         </NavButtonWrapper>
         <SongCardsWrapper>
-          {songs.slice(currentSongIndex, currentSongIndex + 5).map((song) => (
+          {songs.slice(currentSongIndex, currentSongIndex + 5).map((song, index) => (
             <SongCard key={song.ID} onClick={() => handlePlaySong(song)}>
-              <SongImage src={song.imageUrl} alt={song.Name} />
+                <ImageWrapper>
+                  <SongImage src={song.imageUrl} alt={song.Name} />
+                  <PlayIcon />
+                </ImageWrapper>
               <SongDetails>
                 <SongName>{song.Name}</SongName>
                 <ArtistName>{song.Artist}</ArtistName>
               </SongDetails>
+              <Rank>#{currentSongIndex + index + 1}</Rank>
             </SongCard>
           ))}
         </SongCardsWrapper>
@@ -204,10 +228,13 @@ export default function Home() {
             .slice(currentPlaylistIndex, currentPlaylistIndex + 5)
             .map((playlist) => (
               <PlaylistCard key={playlist.id} onClick={() => changeCurrentPlaylist(playlist.id)}>
+                <ImageWrapper>
                 <PlaylistImage
-                  src={playlist.images[0]?.url || "fallback-image-url"}
+                  src={playlist?.images?.length > 0 ? playlist.images[0].url : "https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png"}
                   alt={playlist.name}
                 />
+                  <PlayIcon />
+                </ImageWrapper>
                 <PlaylistName>{playlist.name}</PlaylistName>
               </PlaylistCard>
             ))}
@@ -237,13 +264,63 @@ const Container = styled.div`
   font-family: 'Roboto', sans-serif;
 `;
 
+const PlayIcon = styled.div`
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 50px;
+  height: 50px;
+  background-color: #1db954;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  &:hover {
+    background-color: #17a94a; /* Slightly darker green on hover */
+  }
+
+  &::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 16px solid black; /* Triangle for play icon */
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+  }
+`;
+
+const ImageWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+`;
+
 const Title = styled.h2`
   font-size: 36px;
   font-weight: 700;
   margin-bottom: 40px;
   margin-top: ${(props) => props.marginTop || "0"};  
-  text-align: center;
+  text-align: left;
+  align-self: flex-start;
   color: #f5f5f5;
+`;
+
+const Rank = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5); 
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 `;
 
 const SongsWrapper = styled.div`
@@ -276,11 +353,14 @@ const SongCard = styled.div`
   width: 200px;
   cursor: pointer;
   overflow: hidden;
-  height: 300px; /* Fixed height for consistency */
+  height: 300px; 
+  position: relative;
 
   &:hover {
+    background-color: #3a3a3a;
     transform: translateY(-8px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    ${PlayIcon} {opacity: 1;}
   }
 `;
 
@@ -394,8 +474,10 @@ const PlaylistCard = styled.div`
   height: 250px; /* Fixed height for consistency */
 
   &:hover {
+    background-color: #3a3a3a;
     transform: translateY(-8px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    ${PlayIcon} {opacity: 1;}
   }
 `;
 
@@ -423,5 +505,4 @@ const PlaylistName = styled.h3`
   overflow: hidden;
   text-overflow: ellipsis;
 `;
-
 
