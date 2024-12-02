@@ -9,13 +9,64 @@ export default function Footer() {
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlaylists, setSelectedPlaylists] = useState([]);
-  const [playlistsWithCurrentTrack, setPlaylistsWithCurrentTrack] = useState({});
+  const [playlistsWithCurrentTrack, setPlaylistsWithCurrentTrack] = useState(
+    {}
+  );
   const dropdownRef = useRef(null);
 
   // Filter playlists based on search query
   const filteredPlaylists = playlists.filter(({ name }) =>
     name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Xử lý chọn/deselect playlist
+  const togglePlaylistSelection = (playlistId) => {
+    setSelectedPlaylists(
+      (prev) =>
+        prev.includes(playlistId)
+          ? prev.filter((id) => id !== playlistId) // Bỏ chọn
+          : [...prev, playlistId] // Chọn thêm
+    );
+  };
+
+  const handleConfirmAddToPlaylists = async () => {
+    if (
+      !currentPlaying ||
+      !currentPlaying.id ||
+      selectedPlaylists.length === 0
+    ) {
+      alert("Chưa có bài hát đang phát hoặc chưa chọn playlist!");
+      return;
+    }
+
+    try {
+      for (const playlistId of selectedPlaylists) {
+        if (playlistsWithCurrentTrack[playlistId]) continue; // Bỏ qua nếu đã có bài hát
+
+        await axios.post(
+          `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+          { uris: [`spotify:track:${currentPlaying.id}`] },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      alert("Đã thêm bài hát vào các playlist được chọn!");
+      setSelectedPlaylists([]); // Reset các lựa chọn
+      await checkTrackInPlaylists(); // Cập nhật danh sách playlist
+      setShowPlaylists(false); // Đóng dropdown
+    } catch (error) {
+      console.error(
+        "Error adding track to playlists:",
+        error.response?.data || error
+      );
+      alert("Đã xảy ra lỗi khi thêm bài hát.");
+    }
+  };
 
   // Check which playlists contain the currently playing track
   const checkTrackInPlaylists = async () => {
@@ -58,7 +109,7 @@ export default function Footer() {
           },
         }
       );
-  
+
       if (
         !playlistResponse.data ||
         !playlistResponse.data.tracks ||
@@ -67,16 +118,16 @@ export default function Footer() {
         alert("Không thể lấy thông tin danh sách phát.");
         return;
       }
-  
+
       const trackExists = playlistResponse.data.tracks.items.some(
         (item) => item.track.id === trackId
       );
-  
+
       if (trackExists) {
         alert("Bài hát đã có trong danh sách phát!");
         return;
       }
-  
+
       await axios.post(
         `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
         { uris: [`spotify:track:${trackId}`] },
@@ -87,14 +138,16 @@ export default function Footer() {
           },
         }
       );
-  
+
       alert("Đã thêm bài hát vào danh sách phát!");
-  
+
       // After successfully adding the track, update the playlist status
       await checkTrackInPlaylists(); // Refetch the playlist status
-  
     } catch (error) {
-      console.error("Error adding track to playlist:", error.response?.data || error);
+      console.error(
+        "Error adding track to playlist:",
+        error.response?.data || error
+      );
       alert("Đã xảy ra lỗi khi thêm bài hát vào danh sách phát.");
     } finally {
       setShowPlaylists(false); // Close the dropdown
@@ -118,20 +171,20 @@ export default function Footer() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const togglePlaylistSelection = async (playlistId) => {
-    if (!currentPlaying || !currentPlaying.id) {
-      alert("Không có bài hát nào đang phát!");
-      return;
-    }
+  // const togglePlaylistSelection = async (playlistId) => {
+  //   if (!currentPlaying || !currentPlaying.id) {
+  //     alert("Không có bài hát nào đang phát!");
+  //     return;
+  //   }
 
-    await handleAddToPlaylist(currentPlaying.id, playlistId);
+  //   await handleAddToPlaylist(currentPlaying.id, playlistId);
 
-    setSelectedPlaylists((prev) =>
-      prev.includes(playlistId)
-        ? prev.filter((id) => id !== playlistId)
-        : [...prev, playlistId]
-    );
-  };
+  //   setSelectedPlaylists((prev) =>
+  //     prev.includes(playlistId)
+  //       ? prev.filter((id) => id !== playlistId)
+  //       : [...prev, playlistId]
+  //   );
+  // };
 
   return (
     <Container>
@@ -154,10 +207,20 @@ export default function Footer() {
                     onClick={() => togglePlaylistSelection(id)}
                   >
                     <div className="playlist-info">
-                      <span>{name}</span>
-                      <div className={`circle ${playlistsWithCurrentTrack[id] ? "selected" : ""}`}>
-                        {playlistsWithCurrentTrack[id] && <span className="checkmark">✔</span>}
+                      <div
+                        className={`circle ${
+                          selectedPlaylists.includes(id) ||
+                          playlistsWithCurrentTrack[id]
+                            ? "selected"
+                            : ""
+                        }`}
+                      >
+                        {(selectedPlaylists.includes(id) ||
+                          playlistsWithCurrentTrack[id]) && (
+                          <span className="checkmark">✔</span>
+                        )}
                       </div>
+                      <span>{name}</span>
                     </div>
                   </div>
                 ))}
@@ -165,12 +228,18 @@ export default function Footer() {
                   <div className="no-results">Không tìm thấy playlist!</div>
                 )}
               </div>
+              {selectedPlaylists.length > 0 && (
+                <button
+                  onClick={handleConfirmAddToPlaylists}
+                  className="confirm-button"
+                >
+                  Xác nhận
+                </button>
+              )}
             </div>
           )}
-          <button
-            onClick={handleAddToPlaylistClick}
-            className="add-button"
-          >
+
+          <button onClick={handleAddToPlaylistClick} className="add-button">
             +
           </button>
         </div>
@@ -246,22 +315,29 @@ const Container = styled.div`
       align-items: center;
       padding: 5px 10px;
       cursor: pointer;
-      
+
       &:hover {
         background-color: #767676;
       }
 
       .playlist-info {
         display: flex;
+        justify-content: flex-end; /* Align text to the right */
         align-items: center;
+        width: 100%;
+
+        span {
+          flex: 1;
+          text-align: right; /* Ensure text aligns to the right */
+        }
 
         .circle {
           width: 20px;
           height: 20px;
           border: 2px solid white;
           border-radius: 50%;
-          position: relative; // Position relative for absolute checkmark
-          margin-left: 10px;
+          margin-right: 10px; /* Add margin to separate from text */
+          position: relative;
 
           &.selected {
             background-color: #1db954;
@@ -271,9 +347,9 @@ const Container = styled.div`
           .checkmark {
             position: absolute;
             top: 0;
-            left: 2px; // Adjust left position for centering
-            font-size: 16px; // Adjust size if necessary
-            color: white; // Change color to white for contrast
+            left: 2px;
+            font-size: 16px;
+            color: white;
           }
         }
       }
@@ -284,6 +360,23 @@ const Container = styled.div`
       color: gray;
       font-size: 0.9rem;
       margin-top: 10px;
+    }
+
+    .confirm-button {
+      background-color: #1db954;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      width: 100%;
+      margin-top: 10px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 1rem;
+
+      &:hover {
+        background-color: #17a74a;
+      }
     }
   }
 `;

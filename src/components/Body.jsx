@@ -8,8 +8,10 @@ import { reducerCases } from "../utils/Constants";
 import Home from "./Home"; // Import Home component
 
 export default function Body({ headerBackground }) {
-  const [{ token, selectedPlaylist, selectedPlaylistId, playlists, selectedTrack }, dispatch] =
-    useStateProvider();
+  const [
+    { token, selectedPlaylist, selectedPlaylistId, playlists, selectedTrack },
+    dispatch,
+  ] = useStateProvider();
   const [showDropdown, setShowDropdown] = useState(null);
   const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(null); // State for playlist dropdown
   const dropdownRef = useRef(null);
@@ -28,9 +30,9 @@ export default function Body({ headerBackground }) {
             },
           }
         );
-    
+
         const playlistData = response.data;
-    
+
         // Kiểm tra dữ liệu trả về
         if (!playlistData) {
           console.error("Playlist data is null or undefined!");
@@ -38,7 +40,7 @@ export default function Body({ headerBackground }) {
         }
         const playlistImage = playlistData.images?.[0]?.url || ""; // Dùng URL rỗng nếu không có ảnh
         const playlistTracks = playlistData.tracks?.items || []; // Dùng mảng rỗng nếu không có bài hát
-    
+
         const selectedPlaylist = {
           id: playlistData.id,
           name: playlistData.name,
@@ -58,7 +60,7 @@ export default function Body({ headerBackground }) {
             uri: track?.uri,
           })),
         };
-    
+
         dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist });
       } catch (error) {
         console.error("Error fetching playlist:", error);
@@ -66,7 +68,6 @@ export default function Body({ headerBackground }) {
     };
     if (selectedPlaylistId) getInitialPlaylist();
   }, [token, dispatch, selectedPlaylistId]);
-
 
   // Xử lý đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -80,7 +81,6 @@ export default function Body({ headerBackground }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-
   const handleAddToPlaylist = async (trackId, playlistId) => {
     try {
       // Lấy thông tin playlist hiện tại
@@ -93,14 +93,18 @@ export default function Body({ headerBackground }) {
           },
         }
       );
-  
+
       // Kiểm tra nếu playlist không tồn tại hoặc không có tracks
-      if (!playlistResponse.data || !playlistResponse.data.tracks || !playlistResponse.data.tracks.items) {
+      if (
+        !playlistResponse.data ||
+        !playlistResponse.data.tracks ||
+        !playlistResponse.data.tracks.items
+      ) {
         console.error("Playlist hoặc danh sách bài hát không tồn tại!");
         alert("Không thể lấy thông tin danh sách phát.");
         return;
       }
-    // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
+      // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
       const trackExists = playlistResponse.data.tracks.items.some(
         (item) => item.track.id === trackId
       );
@@ -109,112 +113,22 @@ export default function Body({ headerBackground }) {
         alert("Bài hát đã có trong danh sách phát!");
         return; // Thoát nếu bài hát đã tồn tại
       }
-    // Thêm bài hát vào playlist
-    await axios.post(
-      `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-      { uris: [`spotify:track:${trackId}`] },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+      // Thêm bài hát vào playlist
+      await axios.post(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+        { uris: [`spotify:track:${trackId}`] },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    alert("Đã thêm bài hát vào danh sách phát!");
+      alert("Đã thêm bài hát vào danh sách phát!");
 
-    // Cập nhật lại danh sách các playlist
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Đợi API cập nhật
-    const playlistsResponse = await axios.get(
-      `https://api.spotify.com/v1/me/playlists`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    // Tạo danh sách các playlist đã cập nhật
-    const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
-      id: playlist.id,
-      name: playlist.name,
-      image: playlist.images?.[0]?.url || "", // Kiểm tra kỹ hình ảnh trước khi truy cập
-    }));
-
-    // Cập nhật state danh sách playlist
-    dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
-  } catch (error) {
-    console.error("Error adding track to playlist:", error);
-    alert("Đã xảy ra lỗi khi thêm bài hát vào danh sách phát.");
-  } finally {
-    setShowPlaylistDropdown(null); // Đóng dropdown sau khi hoàn thành
-  }
-};
-
-const handleRemoveFromPlaylist = async (trackId) => {
-  try {
-    // Kiểm tra nếu playlist ID và track ID tồn tại
-    if (!selectedPlaylistId || !trackId) {
-      console.error("Playlist ID hoặc Track ID không tồn tại!");
-      return;
-
-    
-      }
-    // Xóa bài hát khỏi playlist qua API Spotify
-    await axios.delete(
-      `https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`,
-      {
-        headers: {
-          Authorization: "Bearer " + token,
-          "Content-Type": "application/json",
-        },
-        data: {
-          tracks: [{ uri: `spotify:track:${trackId}` }],
-        },
-      }
-    );
-
-    // Đợi API cập nhật dữ liệu
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Lấy thông tin playlist đang chọn
-    const playlistResponse = await axios.get(
-      `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    // Cập nhật danh sách track của playlist đang chọn
-    const updatedTracks =
-      playlistResponse.data.tracks.items.map((item) => ({
-        id: item.track.id,
-        name: item.track.name,
-        artists: item.track.artists.map((artist) => artist.name).join(", "),
-        image: item.track.album.images?.[0]?.url || "", // Hình ảnh của bài hát
-      })) || [];
-
-    // Nếu playlist rỗng, đặt hình ảnh mặc định hoặc trống
-    const updatedImage =
-      updatedTracks.length > 0
-        ? updatedTracks[0].image
-        : ""; // Playlist rỗng thì không có ảnh
-
-    // Cập nhật playlist đang chọn trong state
-    dispatch({
-      type: reducerCases.SET_PLAYLIST,
-      selectedPlaylist: {
-        ...selectedPlaylist,
-        tracks: updatedTracks,
-        image: updatedImage,
-        },
-      });
-  
-      // Cập nhật danh sách các playlist
+      // Cập nhật lại danh sách các playlist
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Đợi API cập nhật
       const playlistsResponse = await axios.get(
         `https://api.spotify.com/v1/me/playlists`,
         {
@@ -224,45 +138,134 @@ const handleRemoveFromPlaylist = async (trackId) => {
           },
         }
       );
-  
+
+      // Tạo danh sách các playlist đã cập nhật
       const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
         id: playlist.id,
         name: playlist.name,
-        image: playlist.images?.[0]?.url || "",
+        image: playlist.images?.[0]?.url || "", // Kiểm tra kỹ hình ảnh trước khi truy cập
       }));
-  
-      dispatch({ type: reducerCases.SET_PLAYLISTS, playlists: updatedPlaylists });
-  
-      console.log("Track removed and playlist updated successfully!");
-      alert("Đã xóa bài hát khỏi danh sách phát!");
+
+      // Cập nhật state danh sách playlist
+      dispatch({
+        type: reducerCases.SET_PLAYLISTS,
+        playlists: updatedPlaylists,
+      });
     } catch (error) {
-      console.error("Error removing track from playlist:", error);
-      alert("Đã xảy ra lỗi khi xóa bài hát khỏi danh sách phát.");
+      console.error("Error adding track to playlist:", error);
+      alert("Đã xảy ra lỗi khi thêm bài hát vào danh sách phát.");
     } finally {
       setShowPlaylistDropdown(null); // Đóng dropdown sau khi hoàn thành
     }
   };
 
-    
+  const handleRemoveFromPlaylist = async (trackId) => {
+    try {
+      if (!selectedPlaylistId || !trackId) {
+        console.error("Playlist ID hoặc Track ID không tồn tại!");
+        return;
+      }
 
-  const msToMinutesAndSeconds = (ms) => {
-    var minutes = Math.floor(ms / 60000);
-    var seconds = ((ms % 60000) / 1000).toFixed(0);
-    return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+      // Xóa bài hát qua API
+      await axios.delete(
+        `https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          data: {
+            tracks: [{ uri: `spotify:track:${trackId}` }],
+          },
+        }
+      );
+
+      // Lấy lại thông tin playlist
+      const playlistResponse = await axios.get(
+        `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const updatedTracks = playlistResponse.data.tracks.items.map((item) => ({
+        id: item.track.id,
+        name: item.track.name,
+        artists: item.track.artists.map((artist) => artist.name).join(", "),
+        album: item.track.album?.name || "Unknown Album",
+        image: item.track.album?.images?.[0]?.url || "",
+        duration: item.track.duration_ms, // Đảm bảo duration lấy từ API
+        context_uri: item.track.album?.uri,
+        track_number: item.track.track_number,
+        uri: item.track.uri,
+      }));
+
+      const updatedImage =
+        updatedTracks.length > 0 ? updatedTracks[0].image : "";
+
+      // Cập nhật playlist đang chọn
+      dispatch({
+        type: reducerCases.SET_PLAYLIST,
+        selectedPlaylist: {
+          ...selectedPlaylist,
+          tracks: updatedTracks,
+          image: updatedImage,
+        },
+      });
+
+      // Lấy lại danh sách playlist
+      const playlistsResponse = await axios.get(
+        `https://api.spotify.com/v1/me/playlists`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const updatedPlaylists = playlistsResponse.data.items.map((playlist) => ({
+        id: playlist.id,
+        name: playlist.name,
+        image: playlist.images?.[0]?.url || "",
+      }));
+
+      dispatch({
+        type: reducerCases.SET_PLAYLISTS,
+        playlists: updatedPlaylists,
+      });
+
+      alert("Đã xóa bài hát khỏi danh sách phát!");
+    } catch (error) {
+      console.error("Error removing track from playlist:", error);
+      alert("Đã xảy ra lỗi khi xóa bài hát.");
+    } finally {
+      setShowPlaylistDropdown(null); // Đóng dropdown
+    }
   };
 
-  const handleAddToQueue = (selectedPlaylistId) =>{
-    // 
-
-  }
-  useEffect(() =>{}
-  ,[selectedTrack])
+  const msToMinutesAndSeconds = (ms) => {
+    if (!ms || isNaN(ms)) return "0:00"; // Xử lý trường hợp ms không hợp lệ
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+  };
 
   return (
     <Container headerBackground={headerBackground}>
-      {showDropdown && <div className="overlay" onClick={() => setShowDropdown(null)} />}
-      {showPlaylistDropdown && <div className="overlay" onClick={() => setShowPlaylistDropdown(null)} />}
-      
+      {showDropdown && (
+        <div className="overlay" onClick={() => setShowDropdown(null)} />
+      )}
+      {showPlaylistDropdown && (
+        <div
+          className="overlay"
+          onClick={() => setShowPlaylistDropdown(null)}
+        />
+      )}
+
       {selectedPlaylist ? (
         <>
           <div className="playlist">
@@ -276,146 +279,139 @@ const handleRemoveFromPlaylist = async (trackId) => {
             </div>
           </div>
           {/* Kiểm tra nếu playlist rỗng */}
-        {selectedPlaylist.tracks.length === 0 ? (
-          <div className="empty-playlist">
-            <h2>Playlist của bạn đang trống</h2>
-            <p>Hãy thêm bài hát vào để bắt đầu nghe nhạc!</p>
-          </div>
-        ) : (
-          <div className="list">
-            <div className="header-row">
-              <div className="col">
-                <span>#</span>
+          {selectedPlaylist.tracks.length === 0 ? (
+            <div className="empty-playlist">
+              <h2>Playlist của bạn đang trống</h2>
+              <p>Hãy thêm bài hát vào để bắt đầu nghe nhạc!</p>
+            </div>
+          ) : (
+            <div className="list">
+              <div className="header-row">
+                <div className="col">
+                  <span>#</span>
+                </div>
+                <div className="col">
+                  <span>TITLE</span>
+                </div>
+                <div className="col">
+                  <span>ALBUM</span>
+                </div>
+                <div className="col">
+                  <span>
+                    <AiFillClockCircle />
+                  </span>
+                </div>
               </div>
-              <div className="col">
-                <span>TITLE</span>
-              </div>
-              <div className="col">
-                <span>ALBUM</span>
-              </div>
-              <div className="col">
-                <span>
-                  <AiFillClockCircle />
-                </span>
+              <div className="tracks">
+                {selectedPlaylist.tracks.map(
+                  (
+                    {
+                      id,
+                      name,
+                      artists,
+                      image,
+                      duration,
+                      album,
+                      context_uri,
+                      track_number,
+                      uri,
+                    },
+                    index
+                  ) => (
+                    <div
+                      className="row"
+                      key={id}
+                      onClick={() => {
+                        // xu li su kien khi bam vao 1 track va add queue selectedPlaylistId
+                        const selectedTrack = {
+                          id,
+                          name,
+                          artists,
+                          image,
+                          duration,
+                          album,
+                          context_uri,
+                          track_number,
+                          uri,
+                        };
+                        dispatch({
+                          type: reducerCases.SET_SELECTED_TRACK,
+                          selectedTrack,
+                        });
+                      }}
+                    >
+                      <div className="col">
+                        <span>{index + 1}</span>
+                      </div>
+                      <div className="col detail">
+                        <div className="image">
+                          <img src={image} alt="track" />
+                        </div>
+                        <div className="info">
+                          <span className="name">{name}</span>
+                          <span>
+                            {Array.isArray(artists)
+                              ? artists.join(", ")
+                              : artists}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="col">
+                        <span>{album}</span>
+                      </div>
+                      <div className="col">
+                        <span>{msToMinutesAndSeconds(duration)}</span>
+                        <div className="ellipsis-container">
+                          <BsThreeDotsVertical
+                            className="ellipsis"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowDropdown(showDropdown === id ? null : id);
+                            }}
+                          />
+                          {showDropdown === id && (
+                            <div className="dropdown" ref={dropdownRef}>
+                              <div
+                                className="dropdown-item"
+                                onClick={() => {
+                                  setShowDropdown(null);
+                                  setShowPlaylistDropdown(id);
+                                }}
+                              >
+                                Thêm vào danh sách phát
+                              </div>
+                              <div
+                                className="dropdown-item"
+                                onClick={() => {
+                                  setShowDropdown(null);
+                                  handleRemoveFromPlaylist(id);
+                                }}
+                              >
+                                Xóa khỏi playlist
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
               </div>
             </div>
-            <div className="tracks">
-              {selectedPlaylist.tracks.map(
-                (
-                  {
-                    id,
-                    name,
-                    artists,
-                    image,
-                    duration,
-                    album,
-                    context_uri,
-                    track_number,
-                    uri
-                  },
-                  index
-                ) => (
-                  <div className="row"
-                  key={id}
-                  onClick={() => {// xu li su kien khi bam vao 1 track va add queue selectedPlaylistId  
-                    const selectedTrack = {id, name, artists, image, duration, album, context_uri, track_number, uri}
-                    dispatch({ type: reducerCases.SET_SELECTED_TRACK, selectedTrack });    
-
-                    // add queue
-
-                    // for(let i= index; i< selectedPlaylist.tracks.length; i++) {
-                    //   const track = selectedPlaylist.tracks[i];
-                    //   const addToQueue = async (uri) => {
-                    //     try {
-                    //       const response = await axios.post(
-                    //         `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
-                    //         {},
-                    //         {
-                    //           headers: {
-                    //             "Content-Type": "application/json",
-                    //             Authorization: "Bearer " + token,
-                    //           },
-                    //         }
-                    //       );
-                    
-                    //       if (response.status === 204) {
-                    //         console.log("Track added to the queue successfully!");
-                    //       }
-                    //     } catch (error) {
-                    //       console.error(error);
-                    //     }
-                    //   };
-                    //   addToQueue(track.uri)    
-                    // }
-                        
-                  }}               
-                  >
-                    <div className="col">
-                      <span>{index + 1}</span>
-                    </div>
-                    <div className="col detail">
-                      <div className="image">
-                        <img src={image} alt="track" />
-                      </div>
-                      <div className="info">
-                        <span className="name">{name}</span>
-                        <span>{Array.isArray(artists) ? artists.join(", ") : artists}</span>
-                      </div>
-                    </div>
-                    <div className="col">
-                      <span>{album}</span>
-                    </div>
-                    <div className="col">
-                      <span>{msToMinutesAndSeconds(duration)}</span>
-                      <div className="ellipsis-container">
-                        <BsThreeDotsVertical
-                          className="ellipsis"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowDropdown(showDropdown === id ? null : id);
-                          }}
-                        />
-                        {showDropdown === id && (
-                          <div className="dropdown" ref={dropdownRef}>
-                            <div
-                              className="dropdown-item"
-                              onClick={() => {
-                                setShowDropdown(null);
-                                setShowPlaylistDropdown(id);
-                              }}
-                            >
-                              Thêm vào danh sách phát
-                            </div>
-                            <div
-                              className="dropdown-item"
-                              onClick={() => {
-                                setShowDropdown(null);
-                                handleRemoveFromPlaylist(id);
-                              }}
-                            >
-                              Xóa khỏi playlist
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        )}
+          )}
         </>
       ) : (
         <Home /> // Show Home component when no playlist is selected
       )}
-      
+
       {showPlaylistDropdown && (
         <div className="playlist-dropdown" ref={dropdownRef}>
           {playlists.map(({ name, id: playlistId }) => (
             <div
               key={playlistId}
-              onClick={() => handleAddToPlaylist(showPlaylistDropdown, playlistId)}
+              onClick={() =>
+                handleAddToPlaylist(showPlaylistDropdown, playlistId)
+              }
               className="dropdown-item"
             >
               {name}
