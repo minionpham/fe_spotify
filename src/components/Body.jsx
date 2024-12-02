@@ -192,13 +192,6 @@ const handleRemoveFromPlaylist = async (trackId) => {
     return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
   };
 
-  const handleAddToQueue = (selectedPlaylistId) =>{
-    // 
-
-  }
-  useEffect(() =>{}
-  ,[selectedTrack])
-
   return (
     <Container headerBackground={headerBackground}>
       {showDropdown && <div className="overlay" onClick={() => setShowDropdown(null)} />}
