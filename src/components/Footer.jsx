@@ -6,7 +6,8 @@ import { reducerCases } from "../utils/Constants";
 import axios from "axios";
 
 export default function Footer() {
-  const [{ token, playlists, currentPlaying, selectedPlaylist }, dispatch] = useStateProvider();
+  const [{ token, playlists, currentPlaying, selectedPlaylist }, dispatch] =
+    useStateProvider();
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlaylists, setSelectedPlaylists] = useState([]);
@@ -15,103 +16,116 @@ export default function Footer() {
   );
   const dropdownRef = useRef(null);
 
-useEffect(() => {
-  const getCurrentTrack = async () => {
-    const response = await axios.get(
-      "https://api.spotify.com/v1/me/player/currently-playing",
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
+  useEffect(() => {
+    const getCurrentTrack = async () => {
+      try {
+        const response = await axios.get(
+          "https://api.spotify.com/v1/me/player/currently-playing",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + token,
+            },
+          }
+        );
+  
+        if (response.data && response.data.item) {
+          const currentTrack = {
+            id: response.data.item.id,
+            name: response.data.item.name,
+            artists: response.data.item.artists.map((artist) => artist.name),
+            image: response.data.item.album.images[2].url,
+            duration: response.data.item.duration_ms,
+            album: response.data.item.album.name,
+            context_uri: response.data.item.album.uri,
+            track_number: response.data.item.track_number,
+            uri: response.data.item.uri,
+          };
+  
+          dispatch({
+            type: reducerCases.SET_CURRENT_PLAYING,
+            currentPlaying: currentTrack,
+          });
+        } else {
+          console.log("No current track playing.");
+        }
+      } catch (error) {
+        console.error("Error fetching current track:", error);
       }
-    );
-    console.log(response);
+    };
+  
+    getCurrentTrack();
+  }, [token, dispatch]);  
 
-    if (response.data) {
-      const currentTrack = {
-        id: response.data.item.id,
-        name: response.data.item.name,
-        artists: response.data.item.artists.map((artist) => artist.name),
-        image: response.data.item.album.images[2].url,
-        duration: response.data.item.duration_ms, // Updated to duration_ms instead of duration
-        album: response.data.item.album.name,
-        context_uri: response.data.item.album.uri,
-        track_number: response.data.item.track_number,
-        uri: response.data.item.uri,
-      };
-      //setCurrentPlaying(currentTrack); // Set current track to state
-      //setPlay(true); // Assuming you want to set play to true here as well
-    } else {
-      console.log("No current track playing.");
+  const handleConfirmAddToPlaylists = async () => {
+    if (
+      !currentPlaying ||
+      !currentPlaying.id ||
+      !currentPlaying.name ||
+      selectedPlaylists.length === 0
+    ) {
+      alert("Chưa có bài hát đang phát hoặc chưa chọn playlist!");
+      return;
+    }
+  
+    try {
+      for (const playlistId of selectedPlaylists) {
+        if (playlistsWithCurrentTrack[playlistId]) continue;
+  
+        await axios.post(
+          `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+          { uris: [`spotify:track:${currentPlaying.id}`] },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+  
+        // Update selected playlist if current track is added
+        if (playlistId === selectedPlaylist?.id) {
+          const newTrack = {
+            id: currentPlaying.id,
+            name: currentPlaying.name,
+            artists: currentPlaying.artists,
+            image: currentPlaying.image,
+            duration: currentPlaying.duration,
+            album: currentPlaying.album,
+            context_uri: currentPlaying.context_uri,
+            track_number: currentPlaying.track_number,
+            uri: currentPlaying.uri,
+          };
+  
+          dispatch({
+            type: reducerCases.SET_PLAYLIST,
+            selectedPlaylist: {
+              ...selectedPlaylist,
+              tracks: [...selectedPlaylist.tracks, newTrack],
+            },
+          });
+        }
+      }
+  
+      alert("Đã thêm bài hát vào các playlist!");
+  
+      const updatedPlaylists = { ...playlistsWithCurrentTrack };
+      selectedPlaylists.forEach((playlistId) => {
+        updatedPlaylists[playlistId] = true;
+      });
+      setPlaylistsWithCurrentTrack(updatedPlaylists);
+  
+      setSelectedPlaylists([]);
+      setShowPlaylists(false);
+    } catch (error) {
+      console.error(
+        "Error adding track to playlists:",
+        error.response?.data || error
+      );
+      alert("Đã xảy ra lỗi khi thêm bài hát.");
     }
   };
-  getCurrentTrack();
-}, [token]);
-
-const handleConfirmAddToPlaylists = async () => {
-  if (!currentPlaying || !currentPlaying.id || selectedPlaylists.length === 0) {
-    alert("Chưa có bài hát đang phát hoặc chưa chọn playlist!");
-    return;
-  }
-
-  try {
-    for (const playlistId of selectedPlaylists) {
-      if (playlistsWithCurrentTrack[playlistId]) continue; // Skip if track already exists
-
-      await axios.post(
-        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-        { uris: [`spotify:track:${currentPlaying.id}`] },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Update selected playlist if current track is added
-      if (playlistId === selectedPlaylist?.id) {
-        const newTrack = {
-          id: currentPlaying.id,
-          name: currentPlaying.name,
-          artists: currentPlaying.artists.map((artist) => artist.name),
-          image: currentPlaying.image, // Use the fetched track image
-          duration: currentPlaying.duration,
-          album: currentPlaying.album,
-          context_uri: currentPlaying.context_uri,
-          track_number: currentPlaying.track_number,
-          uri: currentPlaying.uri,
-        };
-
-        // Dispatch updated playlist with new track
-        dispatch({
-          type: reducerCases.SET_PLAYLIST,
-          selectedPlaylist: {
-            ...selectedPlaylist,
-            tracks: [...selectedPlaylist.tracks, newTrack], // Add new track to the selected playlist
-          },
-        });
-      }
-    }
-
-    alert("Đã thêm bài hát vào các playlist!");
-
-    // Update playlists with current track
-    const updatedPlaylists = { ...playlistsWithCurrentTrack };
-    selectedPlaylists.forEach((playlistId) => {
-      updatedPlaylists[playlistId] = true;
-    });
-    setPlaylistsWithCurrentTrack(updatedPlaylists);
-
-    setSelectedPlaylists([]); // Reset selected playlists
-    setShowPlaylists(false); // Close the playlist dropdown
-  } catch (error) {
-    console.error("Error adding track to playlists:", error.response?.data || error);
-    alert("Đã xảy ra lỗi khi thêm bài hát.");
-  }
-};
-
+  
 
   // Filter playlists based on search query
   const filteredPlaylists = playlists.filter(({ name }) =>
@@ -127,7 +141,6 @@ const handleConfirmAddToPlaylists = async () => {
           : [...prev, playlistId] // Chọn thêm
     );
   };
-
 
   // Check which playlists contain the currently playing track
   const checkTrackInPlaylists = async () => {
@@ -190,7 +203,7 @@ const handleConfirmAddToPlaylists = async () => {
                 className="search-input"
               />
               <div className="playlist-list">
-                {filteredPlaylists.map(({ name, id }) => (
+                {/* {filteredPlaylists.map(({ name, id }) => (
                   <div
                     key={id}
                     className="playlist-item"
@@ -213,7 +226,36 @@ const handleConfirmAddToPlaylists = async () => {
                       <span>{name}</span>
                     </div>
                   </div>
+                ))} */}
+                {filteredPlaylists.map(({ name, id }) => (
+                  <div
+                    key={id}
+                    className="playlist-item"
+                    onClick={() => {
+                      if (!playlistsWithCurrentTrack[id]) {
+                        togglePlaylistSelection(id);
+                      }
+                    }} // <-- Chỗ này sẽ được sửa
+                  >
+                    <div className="playlist-info">
+                      <div
+                        className={`circle ${
+                          selectedPlaylists.includes(id) ||
+                          playlistsWithCurrentTrack[id]
+                            ? "selected"
+                            : ""
+                        }`}
+                      >
+                        {(selectedPlaylists.includes(id) ||
+                          playlistsWithCurrentTrack[id]) && (
+                          <span className="checkmark">✔</span>
+                        )}
+                      </div>
+                      <span>{name}</span>
+                    </div>
+                  </div>
                 ))}
+
                 {filteredPlaylists.length === 0 && (
                   <div className="no-results">Không tìm thấy playlist!</div>
                 )}
@@ -368,5 +410,11 @@ const Container = styled.div`
         background-color: #17a74a;
       }
     }
+  }
+
+  .playlist-item.disabled {
+    pointer-events: none; /* Vô hiệu hóa nhấp chuột */
+    opacity: 0.5; /* Làm mờ để hiển thị trạng thái không hoạt động */
+    cursor: not-allowed; /* Hiển thị con trỏ không cho phép */
   }
 `;
