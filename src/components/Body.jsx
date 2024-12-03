@@ -248,10 +248,8 @@ const handleRemoveFromPlaylist = async (trackId) => {
                     const selectedTrack = {id, name, artists, image, duration, album, context_uri, track_number, uri}
                     dispatch({ type: reducerCases.SET_SELECTED_TRACK, selectedTrack });    
 
-                    // add queue
-
-                    for(let i= index+1; i< selectedPlaylist.tracks.length; i++) {
-                      const track = selectedPlaylist.tracks[i];
+                    // add queue                  
+                      const track = selectedPlaylist.tracks[index+1];
                       const addToQueue = async (uri) => {
                         try {
                           const response = await axios.post(
@@ -272,8 +270,7 @@ const handleRemoveFromPlaylist = async (trackId) => {
                           console.error(error);
                         }
                       };
-                      addToQueue(track.uri)    
-                    }
+                      addToQueue(track.uri)                       
                         
                   }}               
                   >

@@ -73,8 +73,7 @@ export default function Footer() {
 
   return (
     <Container>
-      <div className="current-track-container">
-     
+      <div className="current-track-container">    
         <div className="button-container">
           <button
             onClick={showPlaylists ? null : handleAddToPlaylistClick}
