@@ -83,6 +83,21 @@ const reducer = (state, action) => {
         ...state,
         selectedAlbumId: action.selectedAlbumId,
       };
+    case reducerCases.SET_SELECTED_PLAYLIST:
+      return {
+        ...state,
+        selectedPlaylist: action.selectedPlaylist,
+      };
+    case "UPDATE_PLAYLIST_TRACKS":
+      return {
+        ...state,
+        playlists: state.playlists.map((playlist) =>
+          playlist.id === action.playlistId
+            ? { ...playlist, tracks: [...playlist.tracks, action.track] }
+            : playlist
+        ),
+      };
+          
     default:
       return state;
   }

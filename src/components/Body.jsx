@@ -9,13 +9,13 @@ import Home from "./Home"; // Import Home component
 
 export default function Body({ headerBackground }) {
   const [
-    { token, selectedPlaylist, selectedPlaylistId, playlists, selectedTrack },
+    { token, selectedPlaylist, selectedPlaylistId, playlists},
     dispatch,
   ] = useStateProvider();
   const [showDropdown, setShowDropdown] = useState(null);
   const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(null); // State for playlist dropdown
   const dropdownRef = useRef(null);
-
+  
   // Reset `selectedPlaylist` khi `selectedPlaylistId` thay đổi
   useEffect(() => {
     dispatch({ type: reducerCases.SET_PLAYLIST, selectedPlaylist: null });

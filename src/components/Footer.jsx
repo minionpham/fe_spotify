@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
 import PlayerControls from "./PlayerControls";
 import { useStateProvider } from "../utils/StateProvider";
+import { reducerCases } from "../utils/Constants";
 import axios from "axios";
 
 export default function Footer() {
-  const [{ token, playlists, currentPlaying }] = useStateProvider();
+  const [{ token, playlists, currentPlaying, selectedPlaylist }, dispatch] = useStateProvider();
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlaylists, setSelectedPlaylists] = useState([]);
@@ -13,6 +14,104 @@ export default function Footer() {
     {}
   );
   const dropdownRef = useRef(null);
+
+useEffect(() => {
+  const getCurrentTrack = async () => {
+    const response = await axios.get(
+      "https://api.spotify.com/v1/me/player/currently-playing",
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+      }
+    );
+    console.log(response);
+
+    if (response.data) {
+      const currentTrack = {
+        id: response.data.item.id,
+        name: response.data.item.name,
+        artists: response.data.item.artists.map((artist) => artist.name),
+        image: response.data.item.album.images[2].url,
+        duration: response.data.item.duration_ms, // Updated to duration_ms instead of duration
+        album: response.data.item.album.name,
+        context_uri: response.data.item.album.uri,
+        track_number: response.data.item.track_number,
+        uri: response.data.item.uri,
+      };
+      //setCurrentPlaying(currentTrack); // Set current track to state
+      //setPlay(true); // Assuming you want to set play to true here as well
+    } else {
+      console.log("No current track playing.");
+    }
+  };
+  getCurrentTrack();
+}, [token]);
+
+const handleConfirmAddToPlaylists = async () => {
+  if (!currentPlaying || !currentPlaying.id || selectedPlaylists.length === 0) {
+    alert("Chưa có bài hát đang phát hoặc chưa chọn playlist!");
+    return;
+  }
+
+  try {
+    for (const playlistId of selectedPlaylists) {
+      if (playlistsWithCurrentTrack[playlistId]) continue; // Skip if track already exists
+
+      await axios.post(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+        { uris: [`spotify:track:${currentPlaying.id}`] },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Update selected playlist if current track is added
+      if (playlistId === selectedPlaylist?.id) {
+        const newTrack = {
+          id: currentPlaying.id,
+          name: currentPlaying.name,
+          artists: currentPlaying.artists.map((artist) => artist.name),
+          image: currentPlaying.image, // Use the fetched track image
+          duration: currentPlaying.duration,
+          album: currentPlaying.album,
+          context_uri: currentPlaying.context_uri,
+          track_number: currentPlaying.track_number,
+          uri: currentPlaying.uri,
+        };
+
+        // Dispatch updated playlist with new track
+        dispatch({
+          type: reducerCases.SET_PLAYLIST,
+          selectedPlaylist: {
+            ...selectedPlaylist,
+            tracks: [...selectedPlaylist.tracks, newTrack], // Add new track to the selected playlist
+          },
+        });
+      }
+    }
+
+    alert("Đã thêm bài hát vào các playlist!");
+
+    // Update playlists with current track
+    const updatedPlaylists = { ...playlistsWithCurrentTrack };
+    selectedPlaylists.forEach((playlistId) => {
+      updatedPlaylists[playlistId] = true;
+    });
+    setPlaylistsWithCurrentTrack(updatedPlaylists);
+
+    setSelectedPlaylists([]); // Reset selected playlists
+    setShowPlaylists(false); // Close the playlist dropdown
+  } catch (error) {
+    console.error("Error adding track to playlists:", error.response?.data || error);
+    alert("Đã xảy ra lỗi khi thêm bài hát.");
+  }
+};
+
 
   // Filter playlists based on search query
   const filteredPlaylists = playlists.filter(({ name }) =>
@@ -29,44 +128,6 @@ export default function Footer() {
     );
   };
 
-  const handleConfirmAddToPlaylists = async () => {
-    if (
-      !currentPlaying ||
-      !currentPlaying.id ||
-      selectedPlaylists.length === 0
-    ) {
-      alert("Chưa có bài hát đang phát hoặc chưa chọn playlist!");
-      return;
-    }
-
-    try {
-      for (const playlistId of selectedPlaylists) {
-        if (playlistsWithCurrentTrack[playlistId]) continue; // Bỏ qua nếu đã có bài hát
-
-        await axios.post(
-          `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-          { uris: [`spotify:track:${currentPlaying.id}`] },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      }
-
-      alert("Đã thêm bài hát vào các playlist được chọn!");
-      setSelectedPlaylists([]); // Reset các lựa chọn
-      await checkTrackInPlaylists(); // Cập nhật danh sách playlist
-      setShowPlaylists(false); // Đóng dropdown
-    } catch (error) {
-      console.error(
-        "Error adding track to playlists:",
-        error.response?.data || error
-      );
-      alert("Đã xảy ra lỗi khi thêm bài hát.");
-    }
-  };
 
   // Check which playlists contain the currently playing track
   const checkTrackInPlaylists = async () => {
@@ -98,62 +159,6 @@ export default function Footer() {
     checkTrackInPlaylists();
   }, [currentPlaying, playlists]);
 
-  const handleAddToPlaylist = async (trackId, playlistId) => {
-    try {
-      const playlistResponse = await axios.get(
-        `https://api.spotify.com/v1/playlists/${playlistId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (
-        !playlistResponse.data ||
-        !playlistResponse.data.tracks ||
-        !playlistResponse.data.tracks.items
-      ) {
-        alert("Không thể lấy thông tin danh sách phát.");
-        return;
-      }
-
-      const trackExists = playlistResponse.data.tracks.items.some(
-        (item) => item.track.id === trackId
-      );
-
-      if (trackExists) {
-        alert("Bài hát đã có trong danh sách phát!");
-        return;
-      }
-
-      await axios.post(
-        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-        { uris: [`spotify:track:${trackId}`] },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      alert("Đã thêm bài hát vào danh sách phát!");
-
-      // After successfully adding the track, update the playlist status
-      await checkTrackInPlaylists(); // Refetch the playlist status
-    } catch (error) {
-      console.error(
-        "Error adding track to playlist:",
-        error.response?.data || error
-      );
-      alert("Đã xảy ra lỗi khi thêm bài hát vào danh sách phát.");
-    } finally {
-      setShowPlaylists(false); // Close the dropdown
-    }
-  };
-
   // Toggle playlist dropdown
   const handleAddToPlaylistClick = () => {
     setShowPlaylists((prev) => !prev);
@@ -170,21 +175,6 @@ export default function Footer() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // const togglePlaylistSelection = async (playlistId) => {
-  //   if (!currentPlaying || !currentPlaying.id) {
-  //     alert("Không có bài hát nào đang phát!");
-  //     return;
-  //   }
-
-  //   await handleAddToPlaylist(currentPlaying.id, playlistId);
-
-  //   setSelectedPlaylists((prev) =>
-  //     prev.includes(playlistId)
-  //       ? prev.filter((id) => id !== playlistId)
-  //       : [...prev, playlistId]
-  //   );
-  // };
 
   return (
     <Container>
