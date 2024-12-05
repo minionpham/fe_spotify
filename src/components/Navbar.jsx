@@ -187,7 +187,7 @@ export default function Navbar({ navBackground }) {
       const response = await axios.get(
         `https://api.spotify.com/v1/search?q=${encodeURIComponent(
           query
-        )}&type=track%2Calbum%2Cartist&market=VN&limit=5`,
+        )}&type=track&market=VN&limit=5`,
         {
           headers: {
             Authorization: "Bearer " + token,
@@ -207,30 +207,8 @@ export default function Navbar({ navBackground }) {
         type: "track",
       }));
 
-      const albumSuggestions = items.albums.items.slice(0, 2).map((album) => ({
-        id: album.id,
-        name: album.name,
-        artists: album.artists.map((artist) => artist.name),
-        image: album.images[2]?.url || "",
-        context_uri: album.uri,
-        type: "album",
-        external_urls: album.external_urls,
-      }));
-
-      const artistSuggestions = items.artists.items
-        .slice(0, 2)
-        .map((artist) => ({
-          id: artist.id,
-          name: artist.name,
-          image: artist.images[2]?.url || "",
-          type: "artist",
-          external_urls: artist.external_urls,
-        }));
-
       setSuggestions([
         ...trackSuggestions,
-        ...albumSuggestions,
-        ...artistSuggestions,
       ]);
     } catch (error) {
       console.error("Error fetching: ", error);
@@ -281,9 +259,6 @@ export default function Navbar({ navBackground }) {
     }
   };
 
-  const openExternalLink = (externalUrl) => {
-    window.open(externalUrl, "_blank"); // Open link in a new tab
-  };
 
   return (
     <Container navBackground={navBackground}>
@@ -291,7 +266,7 @@ export default function Navbar({ navBackground }) {
         <FaSearch />
         <input
           type="text"
-          placeholder="Tracks, albums, or artists"
+          placeholder="Search for a song"
           value={searchQuery}
           onChange={handleInputChange}
           onFocus={() => setShowSuggestions(true)}
@@ -302,12 +277,6 @@ export default function Navbar({ navBackground }) {
               <li
                 key={index}
                 onClick={() => {
-                  if (
-                    suggestion.type === "artist" ||
-                    suggestion.type === "album"
-                  ) {
-                    openExternalLink(suggestion.external_urls.spotify); // Open Spotify link for artist or album
-                  } else {
                     const id = suggestion.id;
                     const name = suggestion.name;
                     const image = suggestion.image;
@@ -329,7 +298,6 @@ export default function Navbar({ navBackground }) {
                       suggestion.context_uri,
                       suggestion.track_number
                     );
-                  }
                 }}
               >
                 {suggestion.image && (
@@ -369,7 +337,7 @@ export default function Navbar({ navBackground }) {
                     ></div>
                   ) : (
                     <div className="circle placeholder">
-                      <span>Chưa có ảnh</span>
+                      <span>No image</span>
                     </div>
                   )}
                 </div>
@@ -419,7 +387,7 @@ export default function Navbar({ navBackground }) {
                             ></div>
                           ) : (
                             <div className="circle placeholder">
-                              <span>Chưa có ảnh</span>
+                              <span>No image</span>
                             </div>
                           )}
                         </div>
