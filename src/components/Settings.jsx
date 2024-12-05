@@ -167,18 +167,6 @@ export default function SettingsPopup({ isOpen, onClose }) {
               onChange={handleInputChange}
             />
           </label>
-          <label>
-            Language:
-            <select
-              name="language"
-              value={settings.language}
-              onChange={handleInputChange}
-            >
-              <option value="en">English</option>
-              <option value="vi">Vietnamese</option>
-              <option value="es">Spanish</option>
-            </select>
-          </label>
         </Content>
         <Actions>
           <button onClick={handleSave}>Save</button>

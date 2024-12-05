@@ -30,6 +30,13 @@ export default function Navbar({ navBackground }) {
   const [isSettingOpen, setIsSettingOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchBarRef = useRef(null);
+  const userInfoRef = useRef(null);
+
+  const handleUserInfoClick = (event) => {
+    if(userInfoRef.current && !userInfoRef.current.contains(event.target)) {
+      setShowInfo(false)
+    }
+  }
 
   const handleSearchBarClick = (event) => {
     if (searchBarRef.current && !searchBarRef.current.contains(event.target)) {
@@ -156,6 +163,14 @@ export default function Navbar({ navBackground }) {
       document.removeEventListener("mousedown", handleSearchBarClick);
     };
 
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleUserInfoClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleUserInfoClick);
+    };
   }, []);
 
   const handleToggle = () => {
@@ -293,6 +308,19 @@ export default function Navbar({ navBackground }) {
                   ) {
                     openExternalLink(suggestion.external_urls.spotify); // Open Spotify link for artist or album
                   } else {
+                    const id = suggestion.id;
+                    const name = suggestion.name;
+                    const image = suggestion.image;
+                    const artists = suggestion.artist;
+                    const duration = suggestion.duration;
+                    const album = suggestion.album;
+                    const context_uri = suggestion.context_uri;
+                    const track_number = suggestion.track_number;
+                    const uri = suggestion.uri;
+
+                    const selectedTrack = {id, name, artists, image, duration, album, context_uri, track_number, uri}
+                    dispatch({ type: reducerCases.SET_SELECTED_TRACK, selectedTrack });     
+
                     playTrack(
                       suggestion.id,
                       suggestion.name,
@@ -325,7 +353,7 @@ export default function Navbar({ navBackground }) {
         </button>
 
         {showInfo && (
-          <div className="user-info-popup">
+          <div className="user-info-popup" ref={userInfoRef}>
             <div className="user-info-header">
               <div className="user-details">
 
@@ -457,7 +485,6 @@ export default function Navbar({ navBackground }) {
                               onClick={() => setShowPassword(!showPassword)}
                               className="password-icon"
                             >
-                              {showPassword ? <FaRegEyeSlash /> : <IoEyeOutline />}
                             </button>
                           </div>
                           <p className="email-text">Gmail Account: {userInfo?.email}</p>
@@ -470,9 +497,13 @@ export default function Navbar({ navBackground }) {
                         onClick={() => {
                           if (isEditing) {
                             // Save changes when exiting edit mode
+                            setOldPassword("");
+                            setNewPassword("")
+                            setConfirmNewPassword("")
                             handleSaveChanges();
                           }
                           setIsEditing(!isEditing); // Toggle edit mode
+                          
                         }}
                       >
                         {isEditing ? "Save Changes" : "Manage Account"}
@@ -482,10 +513,6 @@ export default function Navbar({ navBackground }) {
                 </div>
               )}
             </div>
-
-            <button className="switch-user-button">
-              <PiUserSwitch className="switch-icon" /> Switch User
-            </button>
 
             <div>
               <button className="settings-button" onClick={() => setIsSettingOpen(true)}>
