@@ -57,6 +57,74 @@ export default function Footer() {
     getCurrentTrack();
   }, [token, dispatch]);  
 
+  // const handleConfirmAddToPlaylists = async () => {
+  //   if (
+  //     !currentPlaying ||
+  //     !currentPlaying.id ||
+  //     !currentPlaying.name ||
+  //     selectedPlaylists.length === 0
+  //   ) {
+  //     alert("Chưa có bài hát đang phát hoặc chưa chọn playlist!");
+  //     return;
+  //   }
+  
+  //   try {
+  //     for (const playlistId of selectedPlaylists) {
+  //       if (playlistsWithCurrentTrack[playlistId]) continue;
+  
+  //       await axios.post(
+  //         `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+  //         { uris: [`spotify:track:${currentPlaying.id}`] },
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //             "Content-Type": "application/json",
+  //           },
+  //         }
+  //       );
+  
+  //       // Update selected playlist if current track is added
+  //       if (playlistId === selectedPlaylist?.id) {
+  //         const newTrack = {
+  //           id: currentPlaying.id,
+  //           name: currentPlaying.name,
+  //           artists: currentPlaying.artists,
+  //           image: currentPlaying.image,
+  //           duration: currentPlaying.duration,
+  //           album: currentPlaying.album,
+  //           context_uri: currentPlaying.context_uri,
+  //           track_number: currentPlaying.track_number,
+  //           uri: currentPlaying.uri,
+  //         };
+  
+  //         dispatch({
+  //           type: reducerCases.SET_PLAYLIST,
+  //           selectedPlaylist: {
+  //             ...selectedPlaylist,
+  //             tracks: [...selectedPlaylist.tracks, newTrack],
+  //           },
+  //         });
+  //       }
+  //     }
+  
+  //     alert("Đã thêm bài hát vào các playlist!");
+  
+  //     const updatedPlaylists = { ...playlistsWithCurrentTrack };
+  //     selectedPlaylists.forEach((playlistId) => {
+  //       updatedPlaylists[playlistId] = true;
+  //     });
+  //     setPlaylistsWithCurrentTrack(updatedPlaylists);
+  
+  //     setSelectedPlaylists([]);
+  //     setShowPlaylists(false);
+  //   } catch (error) {
+  //     console.error(
+  //       "Error adding track to playlists:",
+  //       error.response?.data || error
+  //     );
+  //     alert("Đã xảy ra lỗi khi thêm bài hát.");
+  //   }
+  // };
   const handleConfirmAddToPlaylists = async () => {
     if (
       !currentPlaying ||
@@ -72,6 +140,7 @@ export default function Footer() {
       for (const playlistId of selectedPlaylists) {
         if (playlistsWithCurrentTrack[playlistId]) continue;
   
+        // Gửi API thêm bài hát vào playlist
         await axios.post(
           `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
           { uris: [`spotify:track:${currentPlaying.id}`] },
@@ -83,38 +152,65 @@ export default function Footer() {
           }
         );
   
-        // Update selected playlist if current track is added
-        if (playlistId === selectedPlaylist?.id) {
-          const newTrack = {
-            id: currentPlaying.id,
-            name: currentPlaying.name,
-            artists: currentPlaying.artists,
-            image: currentPlaying.image,
-            duration: currentPlaying.duration,
-            album: currentPlaying.album,
-            context_uri: currentPlaying.context_uri,
-            track_number: currentPlaying.track_number,
-            uri: currentPlaying.uri,
-          };
+        // Lấy thông tin mới nhất của playlist sau khi thêm bài hát
+        const playlistResponse = await axios.get(
+          `https://api.spotify.com/v1/playlists/${playlistId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
   
+        const updatedTracks = playlistResponse.data.tracks.items.map((item) => ({
+          id: item.track.id,
+          name: item.track.name,
+          artists: item.track.artists.map((artist) => artist.name).join(", "),
+          album: item.track.album?.name || "Unknown Album",
+          image: item.track.album?.images?.[0]?.url || "",
+          duration: item.track.duration_ms,
+          context_uri: item.track.album?.uri,
+          track_number: item.track.track_number,
+          uri: item.track.uri,
+        }));
+  
+        const updatedImage =
+          updatedTracks.length > 0 ? updatedTracks[0].image : "";
+  
+        // Nếu playlist được chọn là playlist hiện tại, cập nhật lại state
+        if (playlistId === selectedPlaylist?.id) {
           dispatch({
             type: reducerCases.SET_PLAYLIST,
             selectedPlaylist: {
               ...selectedPlaylist,
-              tracks: [...selectedPlaylist.tracks, newTrack],
+              tracks: updatedTracks,
+              image: updatedImage,
             },
           });
         }
+  
+        // Cập nhật hình ảnh playlist trong danh sách playlists toàn cục
+        dispatch({
+          type: reducerCases.SET_PLAYLISTS,
+          playlists: playlists.map((playlist) =>
+            playlist.id === playlistId
+              ? { ...playlist, image: updatedImage }
+              : playlist
+          ),
+        });
       }
   
       alert("Đã thêm bài hát vào các playlist!");
   
+      // Cập nhật danh sách playlist đã chứa bài hát
       const updatedPlaylists = { ...playlistsWithCurrentTrack };
       selectedPlaylists.forEach((playlistId) => {
         updatedPlaylists[playlistId] = true;
       });
       setPlaylistsWithCurrentTrack(updatedPlaylists);
   
+      // Reset trạng thái
       setSelectedPlaylists([]);
       setShowPlaylists(false);
     } catch (error) {
