@@ -47,7 +47,7 @@ export default function Login() {
     };
 
     const handleSpotifyAuth = () => {
-        const client_id = "68a6bb1c058249dc82938cb2f602cea4";
+        const client_id = "4353ed52ef66416193e5490b48292603";
         const redirect_uri = "http://localhost:3000/";
         const api_uri = "https://accounts.spotify.com/authorize";
         const scope = [

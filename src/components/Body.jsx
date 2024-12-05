@@ -302,46 +302,60 @@ export default function Body({ headerBackground }) {
                   </span>
                 </div>
               </div>
-              <div className="tracks">
-                {selectedPlaylist.tracks.map(
-                  (
-                    {
-                      id,
-                      name,
-                      artists,
-                      image,
-                      duration,
-                      album,
-                      context_uri,
-                      track_number,
-                      uri,
-                    },
-                    index
-                  ) => (
-                    <div
-                      className="row"
-                      key={id}
-                      onClick={() => {
-                        // xu li su kien khi bam vao 1 track va add queue selectedPlaylistId
-                        const selectedTrack = {
-                          id,
-                          name,
-                          artists,
-                          image,
-                          duration,
-                          album,
-                          context_uri,
-                          track_number,
-                          uri,
-                        };
-                        dispatch({
-                          type: reducerCases.SET_SELECTED_TRACK,
-                          selectedTrack,
-                        });
-                      }}
-                    >
-                      <div className="col">
-                        <span>{index + 1}</span>
+            <div className="tracks">
+              {selectedPlaylist.tracks.map(
+                (
+                  {
+                    id,
+                    name,
+                    artists,
+                    image,
+                    duration,
+                    album,
+                    context_uri,
+                    track_number,
+                    uri
+                  },
+                  index
+                ) => (
+                  <div className="row"
+                  key={id}
+                  onClick={() => {// xu li su kien khi bam vao 1 track va add queue selectedPlaylistId  
+                    const selectedTrack = {id, name, artists, image, duration, album, context_uri, track_number, uri}
+                    dispatch({ type: reducerCases.SET_SELECTED_TRACK, selectedTrack });    
+
+                    // add queue                  
+                      const track = selectedPlaylist.tracks[index+1];
+                      const addToQueue = async (uri) => {
+                        try {
+                          const response = await axios.post(
+                            `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
+                            {},
+                            {
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: "Bearer " + token,
+                              },
+                            }
+                          );
+                    
+                          if (response.status === 204) {
+                            console.log("Track added to the queue successfully!");
+                          }
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      };
+                      addToQueue(track.uri)                       
+                        
+                  }}               
+                  >
+                    <div className="col">
+                      <span>{index + 1}</span>
+                    </div>
+                    <div className="col detail">
+                      <div className="image">
+                        <img src={image} alt="track" />
                       </div>
                       <div className="col detail">
                         <div className="image">
