@@ -8,7 +8,7 @@ import { reducerCases } from "../utils/Constants";
 import Home from "./Home"; // Import Home component
 
 export default function Body({ headerBackground }) {
-  const [{ token, selectedPlaylist, selectedPlaylistId, playlists, selectedTrack }, dispatch] =
+  const [{ token, selectedPlaylist, selectedPlaylistId, playlists }, dispatch] =
     useStateProvider();
   const [showDropdown, setShowDropdown] = useState(null);
   const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(null); // State for playlist dropdown
@@ -192,13 +192,6 @@ const handleRemoveFromPlaylist = async (trackId) => {
     return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
   };
 
-  const handleAddToQueue = (selectedPlaylistId) =>{
-    // 
-
-  }
-  useEffect(() =>{}
-  ,[selectedTrack])
-
   return (
     <Container headerBackground={headerBackground}>
       {showDropdown && <div className="overlay" onClick={() => setShowDropdown(null)} />}
@@ -255,32 +248,29 @@ const handleRemoveFromPlaylist = async (trackId) => {
                     const selectedTrack = {id, name, artists, image, duration, album, context_uri, track_number, uri}
                     dispatch({ type: reducerCases.SET_SELECTED_TRACK, selectedTrack });    
 
-                    // add queue
-
-                    // for(let i= index; i< selectedPlaylist.tracks.length; i++) {
-                    //   const track = selectedPlaylist.tracks[i];
-                    //   const addToQueue = async (uri) => {
-                    //     try {
-                    //       const response = await axios.post(
-                    //         `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
-                    //         {},
-                    //         {
-                    //           headers: {
-                    //             "Content-Type": "application/json",
-                    //             Authorization: "Bearer " + token,
-                    //           },
-                    //         }
-                    //       );
+                    // add queue                  
+                      const track = selectedPlaylist.tracks[index+1];
+                      const addToQueue = async (uri) => {
+                        try {
+                          const response = await axios.post(
+                            `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
+                            {},
+                            {
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: "Bearer " + token,
+                              },
+                            }
+                          );
                     
-                    //       if (response.status === 204) {
-                    //         console.log("Track added to the queue successfully!");
-                    //       }
-                    //     } catch (error) {
-                    //       console.error(error);
-                    //     }
-                    //   };
-                    //   addToQueue(track.uri)    
-                    // }
+                          if (response.status === 204) {
+                            console.log("Track added to the queue successfully!");
+                          }
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      };
+                      addToQueue(track.uri)                       
                         
                   }}               
                   >

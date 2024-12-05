@@ -1,14 +1,18 @@
 import axios from "axios";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { reducerCases } from "../utils/Constants";
 import { useStateProvider } from "../utils/StateProvider";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
 export default function Playlists({ showCreateInput, onCreateSuccess }) {
   const [
     { token, playlists, userInfo, newPlaylistName, contextMenu, selectedPlaylistId },
     dispatch,
   ] = useStateProvider();
+  const [searchTerm, setSearchTerm] = useState(""); // Thêm state để lưu từ khóa tìm kiếm
+  const [isSearchVisible, setSearchVisible] = useState(false); // Quản lý hiển thị searchbar
 
   useEffect(() => {
     const getPlaylistData = async () => {
@@ -73,7 +77,9 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
     const createdPlaylist = {
       name: response.data.name,
       id: response.data.id,
-      image: response.data.images[2]?.url, // Nếu có, lấy ảnh của playlist
+      image: response.data.images?.length > 0
+      ? response.data.images[0].url
+      : "https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png",
     };
   
     // Thêm playlist mới lên đầu danh sách
@@ -141,6 +147,14 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
     dispatch({ type: reducerCases.SET_CONTEXT_MENU, contextMenu: null });
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const filteredPlaylists = playlists.filter((playlist) =>
+    playlist.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  const toggleSearchBar = () => setSearchVisible((prev) => !prev);
   return (
     <Container>
       {showCreateInput && (
@@ -154,17 +168,36 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
           <button onClick={createPlaylist}>Create Playlist</button>
         </div>
       )}
+      <div className="search-container">
+        <button className="search-button" onClick={toggleSearchBar}>
+        <FontAwesomeIcon icon={faSearch} />
+        </button>
+        {isSearchVisible && (
+          <input
+            type="text"
+            className="search-bar"
+            placeholder="Search playlists..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+        )}
+      </div>
+      
       <ul className="playlist-list">
-        {playlists.map(({ name, id, image }) => (
-          <li
-            key={id}
-            onClick={() => changeCurrentPlaylist(id)}
-            onContextMenu={(e) => handleRightClick(e, id)}
-          >
-            <img src={image || "defaultImageUrl"} alt="album" className="playlist-image" />
-            {name}
-          </li>
-        ))}
+      {filteredPlaylists.length > 0 ? (
+          filteredPlaylists.map(({ name, id, image }) => (
+            <li
+              key={id}
+              onClick={() => changeCurrentPlaylist(id)}
+              onContextMenu={(e) => handleRightClick(e, id)}
+            >
+              <img src={image || "defaultImageUrl"} alt="album" className="playlist-image" />
+              {name}
+            </li>
+          ))
+        ) : (
+          <div className="empty-message">No playlists found. Try another search!</div>
+        )}
       </ul>
 
       {contextMenu && (
@@ -183,6 +216,46 @@ const Container = styled.div`
   color: #b3b3b3;
   height: 100%;
   overflow: hidden;
+ 
+  .search-container {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 1rem;
+
+    .search-button {
+    border: none; 
+    border-radius: 3px; 
+    padding: 0.4rem; 
+}
+    .search-bar {
+      flex: 1;
+      width: 100px;
+      padding: 0.4rem;
+      border-radius: 4px;
+      border: none;
+      outline: none;
+      display: inline-block;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+      .empty-message {
+    text-align: center;
+    color: #b3b3b3;
+    margin: 2rem 0;
+    font-size: 1.2rem;
+  }
 
   .create-playlist {
     display: flex;
