@@ -5,7 +5,6 @@ import { reducerCases } from "../utils/Constants";
 import { CgProfile } from "react-icons/cg";
 import { useStateProvider } from "../utils/StateProvider";
 import { FiLogOut } from "react-icons/fi";
-import { PiUserSwitch } from "react-icons/pi";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaRegUserCircle } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa";
@@ -474,7 +473,7 @@ export default function Navbar({ navBackground }) {
                           
                         }}
                       >
-                        {isEditing ? "Save Changes" : "Manage Account"}
+                        {isEditing ? "Save Changes" : "Change password"}
                       </button>
                     </div>
                   </div>
@@ -772,7 +771,7 @@ const Container = styled.div`
     opacity: 1;
     padding: 20px;
     border-radius: 12px;
-    width: 400px;
+    width: 500px;
     max-width: 80%;
     height: 500px;
     text-align: left;
@@ -791,7 +790,7 @@ const Container = styled.div`
     font-family: Arial, sans-serif;
     line-height: 1.6;
     width: 100%;
-    max-width: 400px;
+    max-width: 500px;
   }
 
   .info-details p {
@@ -816,10 +815,9 @@ const Container = styled.div`
 
   .manage-account-button {
     display: block; /* Makes the button a block element */
-    background-color: #2f2f2f;
+    background-color: #1DB954;
     color: white; /* Text color */
     padding: 10px 20px;
-    border: 0.1px solid white;
     border-radius: 20px; /* Rounded corners */
     font-size: 16px; /* Font size */
     font-family: Arial, sans-serif;
@@ -944,7 +942,7 @@ const Container = styled.div`
   }
 
   button[type="submit"] {
-    background-color: #007bff;
+    background-color: #1DB954;
     color: white;
   }
 

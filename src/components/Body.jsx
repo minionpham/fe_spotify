@@ -270,7 +270,7 @@ export default function Body({ headerBackground }) {
         <>
           <div className="playlist">
             <div className="image">
-              <img src={selectedPlaylist.image} alt="selected playlist" />
+              <img src={selectedPlaylist.tracks.length === 0  ? "https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png" : selectedPlaylist.image} alt="selected playlist" />
             </div>
             <div className="details">
               <span className="type">PLAYLIST</span>
@@ -281,8 +281,8 @@ export default function Body({ headerBackground }) {
           {/* Kiểm tra nếu playlist rỗng */}
           {selectedPlaylist.tracks.length === 0 ? (
             <div className="empty-playlist">
-              <h2>Playlist của bạn đang trống</h2>
-              <p>Hãy thêm bài hát vào để bắt đầu nghe nhạc!</p>
+              <h2>This playlist is empty</h2>
+              <p>Add song and start listening</p>
             </div>
           ) : (
             <div className="list">
@@ -383,7 +383,7 @@ export default function Body({ headerBackground }) {
                                   setShowPlaylistDropdown(id);
                                 }}
                               >
-                                Thêm vào danh sách phát
+                                Add song to playlist
                               </div>
                               <div
                                 className="dropdown-item"
@@ -392,7 +392,7 @@ export default function Body({ headerBackground }) {
                                   handleRemoveFromPlaylist(id);
                                 }}
                               >
-                                Xóa khỏi playlist
+                                Remove from playlist
                               </div>
                             </div>
                           )}
@@ -448,6 +448,24 @@ const Container = styled.div`
         color: white;
         font-size: 4rem;
       }
+    }
+  }
+  .empty-playlist {
+    text-align: center;
+    margin-top: 5rem; 
+    color: #e0dede;  
+    
+    h2 {
+      font-size: 3.5rem; 
+      font-weight: bold;
+      color: #fff; 
+      margin-bottom: 1rem; 
+    }
+
+    p {
+      font-size: 1.5rem; 
+      color: #dddcdc; 
+      margin-top: 0; 
     }
   }
   .list {

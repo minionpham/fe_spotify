@@ -191,7 +191,7 @@ export default function Playlists({ showCreateInput, onCreateSuccess }) {
               onClick={() => changeCurrentPlaylist(id)}
               onContextMenu={(e) => handleRightClick(e, id)}
             >
-              <img src={image || "defaultImageUrl"} alt="album" className="playlist-image" />
+              <img src={image || "https://storage.googleapis.com/pr-newsroom-wp/1/2023/05/Spotify_Primary_Logo_RGB_Green.png"} alt="album" className="playlist-image" />
               {name}
             </li>
           ))

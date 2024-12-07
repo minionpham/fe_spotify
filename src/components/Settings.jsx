@@ -8,7 +8,7 @@ const Overlay = styled.div`
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -16,40 +16,66 @@ const Overlay = styled.div`
 `;
 
 const Popup = styled.div`
-  background-color: #2f2f2f;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: #1e1e1e;
+  padding: 30px;
+  border-radius: 12px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   position: relative;
-  color: white; /* Text color set to white */
+  color: #fff;
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   position: absolute;
   top: 0px;
-  right: -30px;
+  right:  0px;
   cursor: pointer;
-  color: white;
+  color: #bbb;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #fff;
+  }
+`;
+
+const Header = styled.h2`
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+  font-weight: bold;
+  text-align: center;
 `;
 
 const Content = styled.div`
-  margin: 20px 0;
+  margin-bottom: 20px;
 
   label {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.2rem; /* Larger text size */
     margin-bottom: 15px;
-    color: white;
 
     input[type="color"] {
-      margin-left: 10px;
+      width: 40px; 
+      height: 30px;
+      cursor: pointer;
+      appearance: none; 
+      background-color: transparent;
+      transition: transform 0.2s ease;
+      border: none; 
+      outline: none;
+      &:hover {
+        transform: scale(1.1); /* Slight enlargement on hover */
+      }
+    }
+
+    input[type="checkbox"] {
       width: 20px;
       height: 20px;
-      border: none;
-      border-radius: 50%;
       cursor: pointer;
     }
   }
@@ -57,45 +83,69 @@ const Content = styled.div`
 
 const Actions = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Center the buttons */
+  gap: 10px;
 
   button {
-    padding: 10px 20px;
+    padding: 12px 25px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
     cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
   }
 
   button:first-child {
-    background-color: #007bff;
-    color: white;
+    background-color: #1db954;
+    color: #fff;
 
     &:hover {
-      background-color: #0056b3;
+      background-color: #17a84e;
     }
   }
 
   button:last-child {
-    background-color: #ccc;
+    background-color: #444;
+    color: #fff;
 
     &:hover {
-      background-color: #999;
+      background-color: #333;
     }
   }
 `;
 
+
+// Utility functions
+const rgbToHex = (rgb) => {
+  const result = rgb.match(/\d+/g);
+  if (!result) return "#000000";
+  const [r, g, b] = result.map(Number);
+  return `#${[r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+};
+
+const hexToRgb = (hex) => {
+  const bigint = parseInt(hex.slice(1), 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 // React component
 export default function SettingsPopup({ isOpen, onClose }) {
   const [settings, setSettings] = useState({
-    backgroundColor: "rgb(32, 87, 100)", // Default background color
+    backgroundColor: "rgb(32, 87, 100)",
     notifications: true,
-    language: "en",
   });
 
   useEffect(() => {
-    // Load saved settings from localStorage
     const savedBackgroundColor = localStorage.getItem("backgroundColor");
-    const defaultColor = "rgb(32, 87, 100)"; // Default background color
+    const defaultColor = "rgb(32, 87, 100)";
     setSettings((prev) => ({
       ...prev,
       backgroundColor: savedBackgroundColor || defaultColor,
@@ -103,41 +153,13 @@ export default function SettingsPopup({ isOpen, onClose }) {
     document.body.style.backgroundColor = savedBackgroundColor || defaultColor;
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setSettings({
-      ...settings,
-      [name]: type === "checkbox" ? checked : value,
-    });
-  };
-
   const handleSave = () => {
-    // Save settings to localStorage
     localStorage.setItem("backgroundColor", settings.backgroundColor);
     document.body.style.backgroundColor = settings.backgroundColor;
-    console.log("Settings saved:", settings);
     onClose();
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
-  };
-
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
   };
 
   const handleColorChange = (hexColor) => {
-    // Convert hex color to rgb
-    const hexToRgb = (hex) => {
-      const bigint = parseInt(hex.slice(1), 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-      return `rgb(${r}, ${g}, ${b})`;
-    };
-  
     const rgbColor = hexToRgb(hexColor);
     setSettings((prev) => ({ ...prev, backgroundColor: rgbColor }));
   };
@@ -145,26 +167,28 @@ export default function SettingsPopup({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <Overlay onClick={handleOverlayClick}>
+    <Overlay>
       <Popup>
-        <h2>Settings</h2>
         <CloseButton onClick={onClose}>×</CloseButton>
+        <Header>Settings</Header>
         <Content>
           <label>
-            Change Background Color:
+            Background Color:
             <input
               type="color"
-              value={settings.backgroundColor}
+              value={rgbToHex(settings.backgroundColor)}
               onChange={(e) => handleColorChange(e.target.value)}
             />
           </label>
           <label>
-            Notifications:
+            Enable Notifications:
             <input
               type="checkbox"
               name="notifications"
               checked={settings.notifications}
-              onChange={handleInputChange}
+              onChange={(e) =>
+                setSettings({ ...settings, notifications: e.target.checked })
+              }
             />
           </label>
         </Content>
