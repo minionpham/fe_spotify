@@ -342,15 +342,14 @@ export default function Navbar({ navBackground }) {
                 </div>
 
                 <div className="user-text">
-                  <p className="user-profile-name">{userInfo?.name}</p>
-                  <p className="user-profile-url">
+                  <p className="user-profile-name">
                     <a
                       href={userInfo?.userUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="profile-link"
                     >
-                      {userInfo?.userUrl}
+                      {userInfo?.name}
                     </a>
                   </p>
                 </div>
