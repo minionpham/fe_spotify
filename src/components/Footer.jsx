@@ -4,6 +4,8 @@ import PlayerControls from "./PlayerControls";
 import { useStateProvider } from "../utils/StateProvider";
 import { reducerCases } from "../utils/Constants";
 import axios from "axios";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
 export default function Footer() {
   const [{ token, playlists, currentPlaying, selectedPlaylist }, dispatch] =
@@ -132,7 +134,7 @@ export default function Footer() {
       !currentPlaying.name ||
       selectedPlaylists.length === 0
     ) {
-      alert("Chưa có bài hát đang phát hoặc chưa chọn playlist!");
+      alert("No playing song or no playlist chosen!");
       return;
     }
   
@@ -201,7 +203,7 @@ export default function Footer() {
         });
       }
   
-      alert("Đã thêm bài hát vào các playlist!");
+      alert("Song added to playlist!");
   
       // Cập nhật danh sách playlist đã chứa bài hát
       const updatedPlaylists = { ...playlistsWithCurrentTrack };
@@ -218,7 +220,7 @@ export default function Footer() {
         "Error adding track to playlists:",
         error.response?.data || error
       );
-      alert("Đã xảy ra lỗi khi thêm bài hát.");
+      alert("Error adding track to playlists");
     }
   };
   
@@ -291,13 +293,16 @@ export default function Footer() {
         <div className="button-container">
           {showPlaylists && (
             <div className="playlist-dropdown" ref={dropdownRef}>
-              <input
-                type="text"
-                placeholder="Tìm một danh sách phát"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
+              <div className="search-container">
+                <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Find a playlist"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
               <div className="playlist-list">
                 {/* {filteredPlaylists.map(({ name, id }) => (
                   <div
@@ -353,7 +358,7 @@ export default function Footer() {
                 ))}
 
                 {filteredPlaylists.length === 0 && (
-                  <div className="no-results">Không tìm thấy playlist!</div>
+                  <div className="no-results">Playlist not found!</div>
                 )}
               </div>
               {selectedPlaylists.length > 0 && (
@@ -361,15 +366,16 @@ export default function Footer() {
                   onClick={handleConfirmAddToPlaylists}
                   className="confirm-button"
                 >
-                  Xác nhận
+                  Confirm
                 </button>
               )}
             </div>
           )}
-
-          <button onClick={handleAddToPlaylistClick} className="add-button">
-            +
-          </button>
+          {currentPlaying && (
+            <button onClick={handleAddToPlaylistClick} className="add-button">
+              +
+            </button>
+          )}
         </div>
       </div>
       <div className="player-controls">
@@ -426,20 +432,38 @@ const Container = styled.div`
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
     width: 250px;
     z-index: 2;
+    color: #fff;
 
-    .search-input {
-      width: 100%;
-      padding: 5px;
-      margin-bottom: 10px;
-      border: none;
-      border-radius: 3px;
-      background-color: #181818;
-      color: white;
-    }
+.search-container {
+          display: flex;
+          align-items: center;
+          gap: 10px; 
+
+          .search-icon {
+            color: #ccc; 
+            margin-bottom: 10px;
+          }
+
+          .search-input {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+          }
+        }
 
     .playlist-list {
       max-height: 200px;
       overflow-y: auto;
+      &::-webkit-scrollbar {
+        width: 0.2rem;
+      }
+      &::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.6);
+        border-radius: 10px;
+      }
     }
 
     .playlist-item {
@@ -461,7 +485,12 @@ const Container = styled.div`
 
         span {
           flex: 1;
-          text-align: right; /* Ensure text aligns to the right */
+          text-align: left;
+          display: block;        
+          max-width: 200px;       
+          white-space: nowrap;     
+          overflow: hidden;        
+          text-overflow: ellipsis;  
         }
 
         .circle {
@@ -479,7 +508,7 @@ const Container = styled.div`
 
           .checkmark {
             position: absolute;
-            top: 0;
+            bottom: -1px;
             left: 2px;
             font-size: 16px;
             color: white;

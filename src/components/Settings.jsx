@@ -118,8 +118,6 @@ const Actions = styled.div`
     }
   }
 `;
-
-
 // Utility functions
 const rgbToHex = (rgb) => {
   const result = rgb.match(/\d+/g);
@@ -136,32 +134,40 @@ const hexToRgb = (hex) => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
-// React component
 export default function SettingsPopup({ isOpen, onClose }) {
   const [settings, setSettings] = useState({
-    backgroundColor: "rgb(32, 87, 100)",
+    backgroundColor: "#1DB954", // Default background color
     notifications: true,
   });
 
+  const [previewColor, setPreviewColor] = useState("#1DB954");
+
+  // Initialize settings from localStorage and apply the background color
   useEffect(() => {
-    const savedBackgroundColor = localStorage.getItem("backgroundColor");
-    const defaultColor = "rgb(32, 87, 100)";
+    const savedBackgroundColor = localStorage.getItem("backgroundColor") || "#1DB954";
     setSettings((prev) => ({
       ...prev,
-      backgroundColor: savedBackgroundColor || defaultColor,
+      backgroundColor: savedBackgroundColor,
     }));
-    document.body.style.backgroundColor = savedBackgroundColor || defaultColor;
+    setPreviewColor(savedBackgroundColor); // Set preview color to the saved color
+    document.body.style.backgroundColor = savedBackgroundColor; // Apply saved color to the background
   }, []);
 
   const handleSave = () => {
-    localStorage.setItem("backgroundColor", settings.backgroundColor);
-    document.body.style.backgroundColor = settings.backgroundColor;
-    onClose();
+    localStorage.setItem("backgroundColor", previewColor); // Save to localStorage
+    setSettings((prev) => ({
+      ...prev,
+      backgroundColor: previewColor, // Update state
+    }));
+    document.body.style.backgroundColor = previewColor; // Apply immediately
+    onClose(); // Close the popup
+    setTimeout(() => {
+      window.location.reload(); // Refresh the page after a brief delay
+    }, 100); // Adding a slight delay ensures UI updates before reload
   };
 
   const handleColorChange = (hexColor) => {
-    const rgbColor = hexToRgb(hexColor);
-    setSettings((prev) => ({ ...prev, backgroundColor: rgbColor }));
+    setPreviewColor(hexColor); // Update preview color
   };
 
   if (!isOpen) return null;
@@ -176,7 +182,7 @@ export default function SettingsPopup({ isOpen, onClose }) {
             Background Color:
             <input
               type="color"
-              value={rgbToHex(settings.backgroundColor)}
+              value={previewColor}
               onChange={(e) => handleColorChange(e.target.value)}
             />
           </label>

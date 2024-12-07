@@ -269,6 +269,7 @@ export default function Navbar({ navBackground }) {
           value={searchQuery}
           onChange={handleInputChange}
           onFocus={() => setShowSuggestions(true)}
+          autocomplete="off"
         />
         {showSuggestions && searchQuery && (
           <ul className="suggestions">
@@ -415,6 +416,7 @@ export default function Navbar({ navBackground }) {
                               type="password"
                               value={oldPassword}
                               onChange={(e) => setOldPassword(e.target.value)}
+                              autocomplete="off"
                             />
                           </div>
                           <div className="editable-field">
@@ -423,6 +425,7 @@ export default function Navbar({ navBackground }) {
                                 type={showPassword ? "text" : "password"}
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
+                                autocomplete="off"
                               />
                               <button
                                 onClick={() => setShowPassword(!showPassword)}
@@ -437,6 +440,7 @@ export default function Navbar({ navBackground }) {
                               type={showPassword ? "text" : "password"}
                               value={confirmNewPassword}
                               onChange={(e) => setConfirmNewPassword(e.target.value)}
+                              autocomplete="off"
                             />
                           </div>
                         </div>

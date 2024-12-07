@@ -216,7 +216,8 @@ const Container = styled.div`
   color: #b3b3b3;
   height: 100%;
   overflow: hidden;
- 
+  margin-top: -20px;
+
   .search-container {
     display: flex;
     align-items: center;
@@ -224,15 +225,16 @@ const Container = styled.div`
     padding: 1rem;
 
     .search-button {
-    border: none; 
-    border-radius: 3px; 
-    padding: 0.4rem; 
-}
+      border: none;
+      border-radius: 0px;
+      padding: 0.4rem;
+    }
+
     .search-bar {
       flex: 1;
       width: 100px;
       padding: 0.4rem;
-      border-radius: 4px;
+      border-radius: 0px;
       border: none;
       outline: none;
       display: inline-block;
@@ -250,7 +252,8 @@ const Container = styled.div`
       transform: scale(1);
     }
   }
-      .empty-message {
+
+  .empty-message {
     text-align: center;
     color: #b3b3b3;
     margin: 2rem 0;
@@ -262,23 +265,12 @@ const Container = styled.div`
     flex-direction: column;
     gap: 0.5rem;
     padding: 1rem;
+    background-color: #141414;
     input {
       padding: 0.5rem;
       border: none;
       border-radius: 4px;
       outline: none;
-    }
-    button {
-      padding: 0.5rem;
-      background-color: #1db954;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: 0.3s ease-in-out;
-      &:hover {
-        background-color: #1ed760;
-      }
     }
   }
 
@@ -288,7 +280,7 @@ const Container = styled.div`
     max-height: 300px;
     overflow-y: auto;
     &::-webkit-scrollbar {
-      width: 0.7rem;
+      width: 0.2rem;
     }
     &::-webkit-scrollbar-thumb {
       background-color: rgba(255, 255, 255, 0.6);
@@ -297,34 +289,65 @@ const Container = styled.div`
     li {
       display: flex;
       align-items: center;
-      gap: 1.5rem;  /* Tăng khoảng cách giữa các playlist */
+      gap: 2rem;
+      padding: 0 0 0.5rem 0;
       transition: 0.3s ease-in-out;
       cursor: pointer;
       &:hover {
         color: white;
       }
       .playlist-image {
-        width: 50px;  /* Tăng kích thước ảnh playlist */
-        height: 50px;
+        width: 40px;
+        height: 40px;
         border-radius: 4px;
         object-fit: cover;
       }
     }
   }
-  .empty-playlist {
-  margin: 2rem;
-  text-align: center;
-  color: #b3b3b3;
-  h2 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    color: #fff;
+
+  button {
+    background-color: transparent;
+    color: grey;
+    border: none;
+    padding: 0.5rem 0rem;
+    cursor: pointer;
+    font-size: 1rem;
+    &:hover {
+      color: white;
+    }
   }
-  p {
-    font-size: 1.2rem;
+
+  .create-playlist button {
+    width: 150px;
+    padding: 0.75rem 0.5rem;
+    background-color: transparent;
+    color: #b3b3b3;
+    border: none;
+    border-radius: 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    display: block;
+    margin: 0 auto;
+    &:hover {
+      background-color: #1ed760;
+      color: #FFFFFF;
+    }
   }
-}
+
+  .create-playlist,
+  .playlist-list {
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3); /* 3D border effect */
+    transition: all 0.3s ease-in-out;
+  }
+
+  .playlist-list:hover {
+    box-shadow: 0px 0px 20px rgba(0, 255, 0, 0.5); 
+  }
 `;
+
+
 
 const ContextMenu = styled.div`
   position: absolute;
