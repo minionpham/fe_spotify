@@ -14,8 +14,8 @@ export default function Login() {
         setError(""); // Reset error message
 
         const url = isRegistering
-            ? "http://localhost:3001/api/users/register"
-            : "http://localhost:3001/api/users/login";
+            ? "https://user-manager-7l3l.onrender.com/api/users/register"
+            : "https://user-manager-7l3l.onrender.com/api/users/login";
 
         try {
             const response = await fetch(url, {
