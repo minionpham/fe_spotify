@@ -60,7 +60,7 @@ export default function Navbar({ navBackground }) {
     formData.append("image", imageFile);
 
     try {
-        const response = await fetch("http://localhost:3001/single", {
+        const response = await fetch("https://user-manager-7l3l.onrender.com/single", {
             method: "POST",
             body: formData,
         });
@@ -70,7 +70,7 @@ export default function Navbar({ navBackground }) {
         if (result.msg === "Image Uploaded") {
             const newImageUrl = result.id; // Assuming backend returns imageId
             localStorage.setItem("imgUrl", newImageUrl); // Store imageId locally
-            setImgUrl(`http://localhost:3001/img/${newImageUrl}`); // Cập nhật URL ảnh hiển thị
+            setImgUrl(`https://user-manager-7l3l.onrender.com/img/${newImageUrl}`); // Cập nhật URL ảnh hiển thị
             alert("Image uploaded successfully:", newImageUrl);
         } else {
             alert("Failed to upload image.");
@@ -104,7 +104,7 @@ export default function Navbar({ navBackground }) {
 
       if (oldPassword && newPassword && oldPassword === user.password) {
         const passwordResponse = await axios.post(
-          `http://localhost:3001/api/users/change-password`,
+          `https://user-manager-7l3l.onrender.com/api/users/change-password`,
           {
             username: user.username, // Pass the updated username
             oldPassword,
@@ -138,10 +138,10 @@ export default function Navbar({ navBackground }) {
 
     const storedImageUrl = localStorage.getItem("imgUrl");
       if (storedImageUrl) {
-        fetch(`http://localhost:3001/img/${storedImageUrl}`)
+        fetch(`https://user-manager-7l3l.onrender.com/img/${storedImageUrl}`)
           .then((response) => {
             if (response.ok) {
-              setImgUrl(`http://localhost:3001/img/${storedImageUrl}`);
+              setImgUrl(`https://user-manager-7l3l.onrender.com/img/${storedImageUrl}`);
             }
           })
                 .catch((error) => console.error("Error loading image:", error));
@@ -150,7 +150,7 @@ export default function Navbar({ navBackground }) {
     const userId = localStorage.getItem("userId");
     const fetchUser = async () => {
       const response = await axios.get(
-        `http://localhost:3001/api/users/${userId}`
+        `https://user-manager-7l3l.onrender.com/api/users/${userId}`
       );
       setUser(response.data);
     };
